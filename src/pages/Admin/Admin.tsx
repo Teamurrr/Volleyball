@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import "./Admin.scss";
 
 import { db } from "../../app/firebase";
@@ -50,11 +50,6 @@ const Admin = () => {
   const [playerPhoto, setPlayerPhoto] = useState("");
   const [isSavingPlayer, setIsSavingPlayer] = useState(false);
   const [playerDrafts, setPlayerDrafts] = useState<Record<string, Omit<Player, "id">>>({});
-
-  const sortedPlayers = useMemo(
-    () => [...players].sort((a, b) => a.name.localeCompare(b.name, "ru")),
-    [players]
-  );
 
   const fetchPlaces = async () => {
     const snap = await getDocs(collection(db, "places"));
@@ -438,8 +433,8 @@ const Admin = () => {
             </thead>
 
             <tbody>
-              {sortedPlayers.length > 0 ? (
-                sortedPlayers.map((player) => (
+              {players.length > 0 ? (
+                players.map((player) => (
                   <tr key={player.id}>
                     <td>
                       <input
