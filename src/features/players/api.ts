@@ -1,4 +1,4 @@
-import { collection, addDoc, updateDoc, doc, onSnapshot } from "firebase/firestore";
+import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from "firebase/firestore";
 import { db } from "../../app/firebase";
 import type { Player } from "../../entities/player";
 
@@ -19,4 +19,8 @@ export const addPlayer = async (player: Omit<Player, "id">) => {
 
 export const updatePlayer = async (id: string, data: Partial<Player>) => {
   await updateDoc(doc(db, "players", id), data);
+};
+
+export const deletePlayer = async (id: string) => {
+  await deleteDoc(doc(db, "players", id));
 };

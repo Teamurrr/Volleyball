@@ -10,7 +10,7 @@ import {
   doc
 } from "firebase/firestore";
 import type { Player } from "../../entities/player";
-import { addPlayer, updatePlayer } from "../../features/players/api";
+import { addPlayer, deletePlayer, updatePlayer } from "../../features/players/api";
 import { usePlayers } from "../../features/players/hook";
 
 type Place = {
@@ -242,6 +242,16 @@ const Admin = () => {
       willCome: draft.willCome,
       paid: draft.paid,
       photo: draft.photo.trim() || "https://via.placeholder.com/80?text=Player"
+    });
+  };
+
+  const removePlayer = async (playerId: string) => {
+    await deletePlayer(playerId);
+
+    setPlayerDrafts((current) => {
+      const next = { ...current };
+      delete next[playerId];
+      return next;
     });
   };
 
@@ -501,12 +511,20 @@ const Admin = () => {
                       </div>
                     </td>
                     <td>
-                      <button
-                        className="save-player-button"
-                        onClick={() => void savePlayer(player.id)}
-                      >
-                        Сохранить
-                      </button>
+                      <div className="player-actions">
+                        <button
+                          className="save-player-button"
+                          onClick={() => void savePlayer(player.id)}
+                        >
+                          Сохранить
+                        </button>
+                        <button
+                          className="delete-player-button"
+                          onClick={() => void removePlayer(player.id)}
+                        >
+                          Удалить
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
