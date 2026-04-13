@@ -27,6 +27,7 @@ type Info = {
   id: string;
   pass: string;
   qrcode: string;
+  totalPaid?: number;
 };
 
 const DEFAULT_START_TIME = "08:00";
@@ -73,6 +74,7 @@ const Admin = () => {
   const [infoId, setInfoId] = useState("");
   const [passLink, setPassLink] = useState("");
   const [qrCodeLink, setQrCodeLink] = useState("");
+  const [totalPaid, setTotalPaid] = useState("");
   const [playerName, setPlayerName] = useState("");
   const [playerPhoto, setPlayerPhoto] = useState("");
   const [isSavingPlayer, setIsSavingPlayer] = useState(false);
@@ -106,7 +108,8 @@ const Admin = () => {
       return {
         id: item.id,
         pass: value.pass || "",
-        qrcode: value.qrcode || ""
+        qrcode: value.qrcode || "",
+        totalPaid: value.totalPaid
       };
     });
 
@@ -115,6 +118,7 @@ const Admin = () => {
     setInfoId(info?.id || "");
     setPassLink(info?.pass || "");
     setQrCodeLink(info?.qrcode || "");
+    setTotalPaid(info?.totalPaid != null ? String(info.totalPaid) : "");
   };
 
   useEffect(() => {
@@ -238,7 +242,8 @@ const Admin = () => {
   const saveInfo = async () => {
     const payload = {
       pass: passLink.trim(),
-      qrcode: qrCodeLink.trim()
+      qrcode: qrCodeLink.trim(),
+      totalPaid: totalPaid.trim() ? Number(totalPaid) : 0
     };
 
     if (infoId) {
@@ -463,10 +468,20 @@ const Admin = () => {
             onChange={(e) => setQrCodeLink(e.target.value)}
           />
 
+          <input
+            type="number"
+            min="0"
+            step="1"
+            placeholder="Общая сумма оплаты"
+            value={totalPaid}
+            onChange={(e) => setTotalPaid(e.target.value)}
+          />
+
           <button onClick={() => void saveInfo()}>Сохранить ссылки</button>
 
           <p className="admin-note">
-            Данные сохраняются в коллекции "info" в поля "pass" и "qrcode".
+            Данные сохраняются в коллекции "info" в поля "pass", "qrcode" и
+            "totalPaid".
           </p>
 
           <div className="info-preview-grid">

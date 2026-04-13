@@ -18,6 +18,7 @@ type Place = {
 type Info = {
   pass: string;
   qrcode: string;
+  totalPaid?: number;
 };
 
 const Main = () => {
@@ -32,6 +33,11 @@ const Main = () => {
   } | null>(null);
   const { players } = usePlayers();
   const visiblePlayers = players.filter((player) => player.willCome);
+  const playersToSplit = Math.max(visiblePlayers.length - 1, 0);
+  const perPlayerAmount =
+    playersToSplit > 0 && (info.totalPaid || 0) > 0
+      ? Math.ceil((info.totalPaid || 0) / playersToSplit)
+      : 0;
 
   useEffect(() => {
     const fetchPlaces = async () => {
@@ -66,7 +72,8 @@ const Main = () => {
       if (!firstDoc) {
         setInfo({
           pass: "",
-          qrcode: ""
+          qrcode: "",
+          totalPaid: 0
         });
         return;
       }
@@ -75,7 +82,8 @@ const Main = () => {
 
       setInfo({
         pass: data.pass || "",
-        qrcode: data.qrcode || ""
+        qrcode: data.qrcode || "",
+        totalPaid: Number(data.totalPaid || 0)
       });
     };
 
@@ -155,6 +163,23 @@ const Main = () => {
                   alt="QR для оплаты"
                 />
               </button>
+
+              <div className="payment-summary">
+                {perPlayerAmount > 0 ? (
+                  <>
+                    <p className="payment-summary-label">Сумма на человека</p>
+                    <p className="payment-summary-value">{perPlayerAmount} сом</p>
+                    <p className="payment-summary-note">
+                      
+                    </p>
+                  </>
+                ) : (
+                  <p className="payment-summary-note">
+                    Сумма появится, когда будет указана общая оплата и хотя бы 2 игрока
+                    в списке.
+                  </p>
+                )}
+              </div>
             </div>
           )}
         </section>
