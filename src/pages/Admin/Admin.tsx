@@ -19,6 +19,7 @@ type Place = {
   address: string;
   addressLink?: string;
   image: string;
+  time?: string;
   isMain?: boolean;
 };
 
@@ -27,6 +28,28 @@ type Info = {
   pass: string;
   qrcode: string;
 };
+
+const DEFAULT_START_TIME = "08:00";
+const DEFAULT_END_TIME = "22:00";
+
+const parseTimeRange = (value?: string) => {
+  if (!value) {
+    return {
+      start: DEFAULT_START_TIME,
+      end: DEFAULT_END_TIME
+    };
+  }
+
+  const normalized = value.replace("—", "-");
+  const [start, end] = normalized.split("-").map((item) => item.trim());
+
+  return {
+    start: start || DEFAULT_START_TIME,
+    end: end || DEFAULT_END_TIME
+  };
+};
+
+const buildTimeRange = (start: string, end: string) => `${start} - ${end}`;
 
 const Admin = () => {
   const [places, setPlaces] = useState<Place[]>([]);
@@ -37,11 +60,15 @@ const Admin = () => {
   const [address, setAddress] = useState("");
   const [addressLink, setAddressLink] = useState("");
   const [image, setImage] = useState("");
+  const [startTime, setStartTime] = useState(DEFAULT_START_TIME);
+  const [endTime, setEndTime] = useState(DEFAULT_END_TIME);
   const [isMain, setIsMain] = useState(false);
   const [newPlaceName, setNewPlaceName] = useState("");
   const [newPlaceAddress, setNewPlaceAddress] = useState("");
   const [newPlaceAddressLink, setNewPlaceAddressLink] = useState("");
   const [newPlaceImage, setNewPlaceImage] = useState("");
+  const [newPlaceStartTime, setNewPlaceStartTime] = useState(DEFAULT_START_TIME);
+  const [newPlaceEndTime, setNewPlaceEndTime] = useState(DEFAULT_END_TIME);
   const [newPlaceIsMain, setNewPlaceIsMain] = useState(false);
   const [infoId, setInfoId] = useState("");
   const [passLink, setPassLink] = useState("");
@@ -62,6 +89,7 @@ const Admin = () => {
         address: dd.address,
         addressLink: dd.addressLink,
         image: dd.image,
+        time: dd.time,
         isMain: dd.isMain
       };
     });
@@ -121,6 +149,9 @@ const Admin = () => {
     setAddress(place.address);
     setAddressLink(place.addressLink || "");
     setImage(place.image);
+    const parsedTime = parseTimeRange(place.time);
+    setStartTime(parsedTime.start);
+    setEndTime(parsedTime.end);
     setIsMain(!!place.isMain);
   };
 
@@ -140,6 +171,7 @@ const Admin = () => {
       address,
       addressLink,
       image,
+      time: buildTimeRange(startTime, endTime),
       isMain
     });
 
@@ -164,6 +196,7 @@ const Admin = () => {
       address: newPlaceAddress.trim(),
       addressLink: newPlaceAddressLink.trim(),
       image: newPlaceImage.trim(),
+      time: buildTimeRange(newPlaceStartTime, newPlaceEndTime),
       isMain: newPlaceIsMain
     });
 
@@ -171,6 +204,8 @@ const Admin = () => {
     setNewPlaceAddress("");
     setNewPlaceAddressLink("");
     setNewPlaceImage("");
+    setNewPlaceStartTime(DEFAULT_START_TIME);
+    setNewPlaceEndTime(DEFAULT_END_TIME);
     setNewPlaceIsMain(false);
 
     void fetchPlaces();
@@ -282,6 +317,26 @@ const Admin = () => {
             onChange={(e) => setNewPlaceImage(e.target.value)}
           />
 
+          <div className="time-fields">
+            <label className="time-field">
+              <span>С</span>
+              <input
+                type="time"
+                value={newPlaceStartTime}
+                onChange={(e) => setNewPlaceStartTime(e.target.value)}
+              />
+            </label>
+
+            <label className="time-field">
+              <span>До</span>
+              <input
+                type="time"
+                value={newPlaceEndTime}
+                onChange={(e) => setNewPlaceEndTime(e.target.value)}
+              />
+            </label>
+          </div>
+
           <label className="admin-check">
             <input
               type="checkbox"
@@ -333,6 +388,26 @@ const Admin = () => {
             value={image}
             onChange={(e) => setImage(e.target.value)}
           />
+
+          <div className="time-fields">
+            <label className="time-field">
+              <span>С</span>
+              <input
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+              />
+            </label>
+
+            <label className="time-field">
+              <span>До</span>
+              <input
+                type="time"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+              />
+            </label>
+          </div>
 
           <label className="admin-check">
             <input

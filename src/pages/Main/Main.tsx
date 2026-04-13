@@ -11,6 +11,7 @@ type Place = {
   address: string;
   addressLink?: string;
   image: string;
+  time?: string;
   isMain?: boolean;
 };
 
@@ -45,6 +46,7 @@ const Main = () => {
           address: d.address,
           addressLink: d.addressLink,
           image: d.image,
+          time: d.time,
           isMain: d.isMain
         };
       });
@@ -105,7 +107,7 @@ const Main = () => {
               <p className="address">{place?.address}</p>
             )}
 
-            <p className="time">08:00 - 22:00</p>
+            <p className="time">{place?.time || "08:00 - 22:00"}</p>
           </div>
         </div>
       </div>

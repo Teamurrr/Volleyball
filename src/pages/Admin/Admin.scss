@@ -79,6 +79,29 @@
   margin: 0;
 }
 
+.time-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 12px;
+}
+
+.time-field {
+  display: grid;
+  gap: 6px;
+  text-align: left;
+  color: #cbd5e1;
+  font-size: 14px;
+}
+
+.time-field span {
+  padding-left: 2px;
+}
+
+.time-field input {
+  margin: 0;
+}
+
 .admin-note,
 .admin-table-header p {
   color: #94a3b8;
@@ -237,6 +260,12 @@
     padding: 11px 12px;
     border-radius: 10px;
     font-size: 14px;
+  }
+
+  .time-fields {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
   }
 
   .admin button {
