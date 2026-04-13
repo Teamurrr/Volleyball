@@ -174,9 +174,6 @@ const Main = () => {
                   <>
                     <p className="payment-summary-label">Сумма на человека</p>
                     <p className="payment-summary-value">{perPlayerAmount} сом</p>
-                    <p className="payment-summary-note">
-                      Расчет: {info.totalPaid || 0} / ({visiblePlayers.length} - 1)
-                    </p>
                   </>
                 ) : (
                   <p className="payment-summary-note">
