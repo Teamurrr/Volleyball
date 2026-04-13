@@ -1,13 +1,18 @@
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from "firebase/firestore";
 import { db } from "../../app/firebase";
-import type { Player } from "../../entities/player";
+import { normalizeAttendanceStatus, type Player } from "../../entities/player";
 
 export const subscribePlayers = (callback: (players: Player[]) => void) => {
   return onSnapshot(collection(db, "players"), snapshot => {
-    const data = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as Player[];
+    const data = snapshot.docs.map((doc) => {
+      const value = doc.data();
+
+      return {
+        id: doc.id,
+        ...value,
+        willCome: normalizeAttendanceStatus(value.willCome as Player["willCome"] | boolean | undefined)
+      };
+    }) as Player[];
 
     callback(data);
   });

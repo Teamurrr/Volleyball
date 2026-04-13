@@ -38,7 +38,7 @@ export const AddPlayerForm = () => {
 
     await addPlayer({
       name,
-      willCome: true,
+      willCome: "no",
       paid: false,
       photo: photoUrl
     });

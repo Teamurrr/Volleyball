@@ -1,4 +1,4 @@
-import type { Player } from "../entities/player";
+import { getAttendanceLabel, type Player } from "../entities/player";
 import { updatePlayer } from "../features/players/api";
 
 type Props = {
@@ -7,7 +7,7 @@ type Props = {
 
 export const PlayerTable = ({ players }: Props) => {
   const toggleCome = (p: Player) => {
-    updatePlayer(p.id, { willCome: !p.willCome });
+    updatePlayer(p.id, { willCome: p.willCome === "yes" ? "no" : "yes" });
   };
 
   const togglePaid = (p: Player) => {
@@ -32,7 +32,7 @@ export const PlayerTable = ({ players }: Props) => {
 
             <td>
               <button onClick={() => toggleCome(p)}>
-                {p.willCome ? "Да" : "Нет"}
+                {getAttendanceLabel(p.willCome)}
               </button>
             </td>
 

@@ -9,7 +9,11 @@ import {
   updateDoc,
   doc
 } from "firebase/firestore";
-import type { Player } from "../../entities/player";
+import {
+  normalizeAttendanceStatus,
+  type AttendanceStatus,
+  type Player
+} from "../../entities/player";
 import { addPlayer, deletePlayer, updatePlayer } from "../../features/players/api";
 import { usePlayers } from "../../features/players/hook";
 
@@ -133,7 +137,7 @@ const Admin = () => {
       players.forEach((player) => {
         next[player.id] = current[player.id] ?? {
           name: player.name,
-          willCome: player.willCome,
+          willCome: normalizeAttendanceStatus(player.willCome),
           paid: player.paid,
           photo: player.photo
         };
@@ -223,7 +227,7 @@ const Admin = () => {
     try {
       await addPlayer({
         name: playerName.trim(),
-        willCome: false,
+        willCome: "no",
         paid: false,
         photo: playerPhoto.trim() || "https://via.placeholder.com/80?text=Player"
       });
@@ -235,7 +239,10 @@ const Admin = () => {
     }
   };
 
-  const setPlayerAttendance = async (player: Player, willCome: boolean) => {
+  const setPlayerAttendance = async (
+    player: Player,
+    willCome: AttendanceStatus
+  ) => {
     await updatePlayer(player.id, { willCome });
   };
 
@@ -449,7 +456,7 @@ const Admin = () => {
 
           <p className="admin-note">
             Новый игрок добавляется в базу и по умолчанию не показывается на
-            главной, пока для него не выбран статус "Да".
+            главной, пока для него не выбран статус "Да" или "Возможно".
           </p>
         </section>
 
@@ -507,7 +514,7 @@ const Admin = () => {
       <section className="admin-card admin-card-table">
         <div className="admin-table-header">
           <h2>Все игроки</h2>
-          <p>На главной показываются только игроки со статусом "Да"</p>
+          <p>На главной показываются только игроки со статусом "Да" и "Возможно"</p>
         </div>
 
         <div className="admin-table-wrap">
@@ -539,26 +546,39 @@ const Admin = () => {
                       <div className="attendance-actions">
                         <button
                           className={
-                            (playerDrafts[player.id]?.willCome ?? player.willCome)
+                            (playerDrafts[player.id]?.willCome ?? player.willCome) === "yes"
                               ? "is-active"
                               : ""
                           }
                           onClick={() => {
-                            void setPlayerAttendance(player, true);
-                            updatePlayerDraft(player.id, "willCome", true);
+                            void setPlayerAttendance(player, "yes");
+                            updatePlayerDraft(player.id, "willCome", "yes");
                           }}
                         >
                           Да
                         </button>
                         <button
                           className={
-                            !(playerDrafts[player.id]?.willCome ?? player.willCome)
+                            (playerDrafts[player.id]?.willCome ?? player.willCome) === "maybe"
                               ? "is-active"
                               : ""
                           }
                           onClick={() => {
-                            void setPlayerAttendance(player, false);
-                            updatePlayerDraft(player.id, "willCome", false);
+                            void setPlayerAttendance(player, "maybe");
+                            updatePlayerDraft(player.id, "willCome", "maybe");
+                          }}
+                        >
+                          Возможно
+                        </button>
+                        <button
+                          className={
+                            (playerDrafts[player.id]?.willCome ?? player.willCome) === "no"
+                              ? "is-active"
+                              : ""
+                          }
+                          onClick={() => {
+                            void setPlayerAttendance(player, "no");
+                            updatePlayerDraft(player.id, "willCome", "no");
                           }}
                         >
                           Нет

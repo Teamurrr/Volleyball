@@ -4,6 +4,7 @@ import "./main.scss";
 import { db } from "../../app/firebase";
 import { collection, getDocs } from "firebase/firestore";
 import { usePlayers } from "../../features/players/hook";
+import { getAttendanceLabel, normalizeAttendanceStatus } from "../../entities/player";
 
 type Place = {
   id: string;
@@ -25,14 +26,18 @@ const Main = () => {
   const [place, setPlace] = useState<Place | null>(null);
   const [info, setInfo] = useState<Info>({
     pass: "",
-    qrcode: ""
+    qrcode: "",
+    totalPaid: 0
   });
   const [selectedPhoto, setSelectedPhoto] = useState<{
     src: string;
     name: string;
   } | null>(null);
   const { players } = usePlayers();
-  const visiblePlayers = players.filter((player) => player.willCome);
+  const visiblePlayers = players.filter((player) => {
+    const attendance = normalizeAttendanceStatus(player.willCome);
+    return attendance === "yes" || attendance === "maybe";
+  });
   const playersToSplit = Math.max(visiblePlayers.length - 1, 0);
   const perPlayerAmount =
     playersToSplit > 0 && (info.totalPaid || 0) > 0
@@ -170,7 +175,7 @@ const Main = () => {
                     <p className="payment-summary-label">Сумма на человека</p>
                     <p className="payment-summary-value">{perPlayerAmount} сом</p>
                     <p className="payment-summary-note">
-                      
+                      Расчет: {info.totalPaid || 0} / ({visiblePlayers.length} - 1)
                     </p>
                   </>
                 ) : (
@@ -207,7 +212,7 @@ const Main = () => {
                 visiblePlayers.map((player) => (
                   <tr key={player.id}>
                     <td className="player-name">{player.name}</td>
-                    <td>Да</td>
+                    <td>{getAttendanceLabel(normalizeAttendanceStatus(player.willCome))}</td>
                     <td>{player.paid ? "Да" : "Нет"}</td>
                     <td>
                       <button
