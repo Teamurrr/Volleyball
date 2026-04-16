@@ -206,10 +206,18 @@ const Main = () => {
 
             <tbody>
               {visiblePlayers.length > 0 ? (
-                visiblePlayers.map((player) => (
-                  <tr key={player.id}>
+                visiblePlayers.map((player) => {
+                  const attendance = normalizeAttendanceStatus(player.willCome);
+
+                  return (
+                  <tr
+                    key={player.id}
+                    className={attendance === "maybe" ? "player-row-maybe" : undefined}
+                  >
                     <td className="player-name">{player.name}</td>
-                    <td>{getAttendanceLabel(normalizeAttendanceStatus(player.willCome))}</td>
+                    <td className={attendance === "maybe" ? "player-status-maybe" : undefined}>
+                      {getAttendanceLabel(attendance)}
+                    </td>
                     <td>{player.paid ? "Да" : "Нет"}</td>
                     <td>
                       <button
@@ -230,7 +238,7 @@ const Main = () => {
                       </button>
                     </td>
                   </tr>
-                ))
+                   )})
               ) : (
                 <tr>
                   <td colSpan={4} className="players-empty">

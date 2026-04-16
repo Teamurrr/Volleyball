@@ -235,6 +235,15 @@
   cursor: pointer;
 }
 
+.player-row-maybe td {
+  background: rgba(245, 159, 11, 0.036);
+}
+
+.player-status-maybe {
+  color: #fbbe24cd !important;
+  font-weight: 700;
+}
+
 .photo-modal-image {
   max-width: min(90vw, 960px);
   max-height: 85vh;
