@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import "./Admin.scss";
 
 import { db } from "../../app/firebase";
@@ -56,6 +56,12 @@ const parseTimeRange = (value?: string) => {
 
 const buildTimeRange = (start: string, end: string) => `${start} - ${end}`;
 
+const getAttendancePriority = (value: AttendanceStatus) => {
+  if (value === "yes") return 0;
+  if (value === "maybe") return 1;
+  return 2;
+};
+
 const Admin = () => {
   const [places, setPlaces] = useState<Place[]>([]);
   const [selectedId, setSelectedId] = useState("");
@@ -83,6 +89,17 @@ const Admin = () => {
   const [playerPhoto, setPlayerPhoto] = useState("");
   const [isSavingPlayer, setIsSavingPlayer] = useState(false);
   const [playerDrafts, setPlayerDrafts] = useState<Record<string, Omit<Player, "id">>>({});
+
+  const sortedPlayers = useMemo(
+    () =>
+      [...players].sort((a, b) => {
+        const left = normalizeAttendanceStatus(playerDrafts[a.id]?.willCome ?? a.willCome);
+        const right = normalizeAttendanceStatus(playerDrafts[b.id]?.willCome ?? b.willCome);
+
+        return getAttendancePriority(left) - getAttendancePriority(right);
+      }),
+    [playerDrafts, players]
+  );
 
   const fetchPlaces = async () => {
     const snap = await getDocs(collection(db, "places"));
@@ -530,8 +547,8 @@ const Admin = () => {
             </thead>
 
             <tbody>
-              {players.length > 0 ? (
-                players.map((player) => (
+              {sortedPlayers.length > 0 ? (
+                sortedPlayers.map((player) => (
                   <tr key={player.id}>
                     <td>
                       <input
