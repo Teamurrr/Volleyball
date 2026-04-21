@@ -129,6 +129,10 @@
   margin-bottom: 16px;
 }
 
+.save-all-button {
+  white-space: nowrap;
+}
+
 .admin-table-wrap {
   overflow-x: auto;
 }
@@ -230,6 +234,10 @@
     align-items: flex-start;
   }
 
+  .save-all-button {
+    width: 100%;
+  }
+
   .info-preview-grid {
     grid-template-columns: 1fr;
   }
@@ -315,6 +323,7 @@
   }
 
   .attendance-actions button,
+  .save-all-button,
   .save-player-button,
   .delete-player-button {
     width: 100%;

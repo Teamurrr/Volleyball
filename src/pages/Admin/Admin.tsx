@@ -88,6 +88,7 @@ const Admin = () => {
   const [playerName, setPlayerName] = useState("");
   const [playerPhoto, setPlayerPhoto] = useState("");
   const [isSavingPlayer, setIsSavingPlayer] = useState(false);
+  const [isSavingAllPlayers, setIsSavingAllPlayers] = useState(false);
   const [playerDrafts, setPlayerDrafts] = useState<Record<string, Omit<Player, "id">>>({});
 
   const sortedPlayers = useMemo(
@@ -302,6 +303,28 @@ const Admin = () => {
       paid: draft.paid,
       photo: draft.photo.trim() || "https://via.placeholder.com/80?text=Player"
     });
+  };
+
+  const saveAllPlayers = async () => {
+    setIsSavingAllPlayers(true);
+
+    try {
+      await Promise.all(
+        players.map((player) => {
+          const draft = playerDrafts[player.id];
+          if (!draft) return Promise.resolve();
+
+          return updatePlayer(player.id, {
+            name: draft.name.trim(),
+            willCome: draft.willCome,
+            paid: draft.paid,
+            photo: draft.photo.trim() || "https://via.placeholder.com/80?text=Player"
+          });
+        })
+      );
+    } finally {
+      setIsSavingAllPlayers(false);
+    }
   };
 
   const removePlayer = async (playerId: string) => {
@@ -530,8 +553,18 @@ const Admin = () => {
 
       <section className="admin-card admin-card-table">
         <div className="admin-table-header">
-          <h2>Все игроки</h2>
-          <p>На главной показываются только игроки со статусом "Да" и "Возможно"</p>
+          <div>
+            <h2>Все игроки</h2>
+            <p>На главной показываются только игроки со статусом "Да" и "Возможно"</p>
+          </div>
+
+          <button
+            className="save-all-button"
+            onClick={() => void saveAllPlayers()}
+            disabled={isSavingAllPlayers || players.length === 0}
+          >
+            {isSavingAllPlayers ? "Сохраняем..." : "Сохранить всех"}
+          </button>
         </div>
 
         <div className="admin-table-wrap">
