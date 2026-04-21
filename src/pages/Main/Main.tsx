@@ -1,10 +1,14 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "./main.scss";
 
 import { db } from "../../app/firebase";
 import { collection, getDocs } from "firebase/firestore";
 import { usePlayers } from "../../features/players/hook";
-import { getAttendanceLabel, normalizeAttendanceStatus } from "../../entities/player";
+import {
+  getAttendanceLabel,
+  normalizeAttendanceStatus,
+  type AttendanceStatus
+} from "../../entities/player";
 
 type Place = {
   id: string;
@@ -22,6 +26,12 @@ type Info = {
   totalPaid?: number;
 };
 
+const getAttendancePriority = (value: AttendanceStatus) => {
+  if (value === "yes") return 0;
+  if (value === "maybe") return 1;
+  return 2;
+};
+
 const Main = () => {
   const [place, setPlace] = useState<Place | null>(null);
   const [info, setInfo] = useState<Info>({
@@ -34,10 +44,25 @@ const Main = () => {
     name: string;
   } | null>(null);
   const { players } = usePlayers();
-  const visiblePlayers = players.filter((player) => {
-    const attendance = normalizeAttendanceStatus(player.willCome);
-    return attendance === "yes" || attendance === "maybe";
-  });
+
+  const visiblePlayers = useMemo(
+    () =>
+      players
+        .filter((player) => {
+          const attendance = normalizeAttendanceStatus(player.willCome);
+          return attendance === "yes" || attendance === "maybe";
+        })
+        .sort(
+          (a, b) =>
+            getAttendancePriority(normalizeAttendanceStatus(a.willCome)) -
+            getAttendancePriority(normalizeAttendanceStatus(b.willCome))
+        ),
+    [players]
+  );
+  const confirmedPlayersCount = visiblePlayers.filter(
+    (player) => normalizeAttendanceStatus(player.willCome) === "yes"
+  ).length;
+
   const playersToSplit = Math.max(visiblePlayers.length - 1, 0);
   const perPlayerAmount =
     playersToSplit > 0 && (info.totalPaid || 0) > 0
@@ -190,7 +215,9 @@ const Main = () => {
       <section className="players-section">
         <div className="players-header">
           <h2>Игроки</h2>
-          <p className="players-count">Всего: {visiblePlayers.length}</p>
+          <p className="players-count">
+            Всего: {visiblePlayers.length} ({confirmedPlayersCount} точно)
+          </p>
         </div>
 
         <div className="players-table-wrap">
@@ -210,35 +237,36 @@ const Main = () => {
                   const attendance = normalizeAttendanceStatus(player.willCome);
 
                   return (
-                  <tr
-                    key={player.id}
-                    className={attendance === "maybe" ? "player-row-maybe" : undefined}
-                  >
-                    <td className="player-name">{player.name}</td>
-                    <td className={attendance === "maybe" ? "player-status-maybe" : undefined}>
-                      {getAttendanceLabel(attendance)}
-                    </td>
-                    <td>{player.paid ? "Да" : "Нет"}</td>
-                    <td>
-                      <button
-                        type="button"
-                        className="player-photo-button"
-                        onClick={() =>
-                          setSelectedPhoto({
-                            src: player.photo,
-                            name: player.name
-                          })
-                        }
-                      >
-                        <img
-                          className="player-photo"
-                          src={player.photo}
-                          alt={player.name}
-                        />
-                      </button>
-                    </td>
-                  </tr>
-                   )})
+                    <tr
+                      key={player.id}
+                      className={attendance === "maybe" ? "player-row-maybe" : undefined}
+                    >
+                      <td className="player-name">{player.name}</td>
+                      <td className={attendance === "maybe" ? "player-status-maybe" : undefined}>
+                        {getAttendanceLabel(attendance)}
+                      </td>
+                      <td>{player.paid ? "Да" : "Нет"}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="player-photo-button"
+                          onClick={() =>
+                            setSelectedPhoto({
+                              src: player.photo,
+                              name: player.name
+                            })
+                          }
+                        >
+                          <img
+                            className="player-photo"
+                            src={player.photo}
+                            alt={player.name}
+                          />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
                   <td colSpan={4} className="players-empty">
