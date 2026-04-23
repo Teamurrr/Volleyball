@@ -40,7 +40,8 @@ export const AddPlayerForm = () => {
       name,
       willCome: "no",
       paid: false,
-      photo: photoUrl
+      photo: photoUrl,
+      elo: 1
     });
 
     setName("");
