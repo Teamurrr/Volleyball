@@ -222,6 +222,12 @@ const Lineup = () => {
     }));
   };
 
+  const getZoneEloTotal = (zoneId: ZoneId) =>
+    zonePlayers[zoneId].reduce((total, playerId) => {
+      const player = playersMap.get(playerId);
+      return total + (player?.elo ?? 0);
+    }, 0);
+
   const renderPlayerCard = (playerId: string) => {
     const player = playersMap.get(playerId);
 
@@ -308,7 +314,11 @@ const Lineup = () => {
               <div className="team-dropzone-header">
                 <div>
                   <h2>{ZONE_TITLES[zoneId]}</h2>
-                  <p>{zonePlayers[zoneId].length} игроков</p>
+                  <p>
+                    {zonePlayers[zoneId].length} игроков
+                    {" · "}
+                    Overall ELO: {getZoneEloTotal(zoneId)}
+                  </p>
                 </div>
 
                 <button
