@@ -379,7 +379,7 @@ const Lineup = () => {
         >
           <div className="lineup-board-header">
             <h2>{ZONE_TITLES.pool}</h2>
-            <p>{zonePlayers.pool.length} в пуле</p>
+            <p>{zonePlayers.pool.length} Доступно</p>
           </div>
 
           {zonePlayers.pool.length > 0 ? (
