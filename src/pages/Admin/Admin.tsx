@@ -34,6 +34,10 @@ type Info = {
   totalPaid?: number;
 };
 
+type PlayerDraft = Omit<Player, "id" | "elo"> & {
+  elo: number | "";
+};
+
 const DEFAULT_START_TIME = "08:00";
 const DEFAULT_END_TIME = "22:00";
 const DEFAULT_PLAYER_elo = 0;
@@ -91,7 +95,7 @@ const Admin = () => {
   const [playerelo, setPlayerelo] = useState(String(DEFAULT_PLAYER_elo));
   const [isSavingPlayer, setIsSavingPlayer] = useState(false);
   const [isSavingAllPlayers, setIsSavingAllPlayers] = useState(false);
-  const [playerDrafts, setPlayerDrafts] = useState<Record<string, Omit<Player, "id">>>({});
+  const [playerDrafts, setPlayerDrafts] = useState<Record<string, PlayerDraft>>({});
 
   const sortedPlayers = useMemo(
     () =>
@@ -152,7 +156,7 @@ const Admin = () => {
 
   useEffect(() => {
     setPlayerDrafts((current) => {
-      const next: Record<string, Omit<Player, "id">> = {};
+      const next: Record<string, PlayerDraft> = {};
 
       players.forEach((player) => {
         next[player.id] = current[player.id] ?? {
@@ -284,10 +288,10 @@ const Admin = () => {
     }
   };
 
-  const updatePlayerDraft = (
+  const updatePlayerDraft = <K extends keyof PlayerDraft>(
     playerId: string,
-    field: keyof Omit<Player, "id">,
-    value: string | number | boolean
+    field: K,
+    value: PlayerDraft[K]
   ) => {
     setPlayerDrafts((current) => ({
       ...current,
@@ -307,7 +311,7 @@ const Admin = () => {
       willCome: draft.willCome,
       paid: draft.paid,
       photo: draft.photo.trim() || "https://via.placeholder.com/80?text=Player",
-      elo: Number(draft.elo) || DEFAULT_PLAYER_elo
+      elo: draft.elo === "" ? DEFAULT_PLAYER_elo : Number(draft.elo)
     });
   };
 
@@ -325,7 +329,7 @@ const Admin = () => {
             willCome: draft.willCome,
             paid: draft.paid,
             photo: draft.photo.trim() || "https://via.placeholder.com/80?text=Player",
-            elo: Number(draft.elo) || DEFAULT_PLAYER_elo
+            elo: draft.elo === "" ? DEFAULT_PLAYER_elo : Number(draft.elo)
           });
         })
       );
@@ -477,7 +481,9 @@ const Admin = () => {
             <span>Сделать главным</span>
           </label>
 
-          <button onClick={updatePlace}>Сохранить место</button>
+          <button className="save-action-button" onClick={updatePlace}>
+            Сохранить место
+          </button>
 
           {image && <img src={image} alt="preview" className="preview" />}
         </section>
@@ -540,7 +546,9 @@ const Admin = () => {
             onChange={(e) => setTotalPaid(e.target.value)}
           />
 
-          <button onClick={() => void saveInfo()}>Сохранить ссылки</button>
+          <button className="save-action-button" onClick={() => void saveInfo()}>
+            Сохранить ссылки
+          </button>
 
           <p className="admin-note">
             Данные сохраняются в коллекции "info" в поля "pass", "qrcode" и
@@ -575,7 +583,7 @@ const Admin = () => {
           </div>
 
           <button
-            className="save-all-button"
+            className="save-all-button save-action-button"
             onClick={() => void saveAllPlayers()}
             disabled={isSavingAllPlayers || players.length === 0}
           >
@@ -678,7 +686,11 @@ const Admin = () => {
                           DEFAULT_PLAYER_elo
                         }
                         onChange={(e) =>
-                          updatePlayerDraft(player.id, "elo", Number(e.target.value))
+                          updatePlayerDraft(
+                            player.id,
+                            "elo",
+                            e.target.value === "" ? "" : Number(e.target.value)
+                          )
                         }
                       />
                     </td>
@@ -701,7 +713,7 @@ const Admin = () => {
                     <td>
                       <div className="player-actions">
                         <button
-                          className="save-player-button"
+                          className="save-player-button save-action-button"
                           onClick={() => void savePlayer(player.id)}
                         >
                           Сохранить
