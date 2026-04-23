@@ -228,6 +228,15 @@ const Lineup = () => {
       return total + (player?.elo ?? 0);
     }, 0);
 
+  const resetTeams = () => {
+    setZonePlayers({
+      team1: [],
+      team2: [],
+      team3: [],
+      pool: visiblePlayerIds
+    });
+  };
+
   const renderPlayerCard = (playerId: string) => {
     const player = playersMap.get(playerId);
 
@@ -287,6 +296,13 @@ const Lineup = () => {
             </div>
 
             <div className="lineup-links">
+              <button
+                type="button"
+                className="lineup-link lineup-link-reset"
+                onClick={resetTeams}
+              >
+                Очистить команды
+              </button>
               <Link className="lineup-link" to="/">
                 Главная
               </Link>

@@ -97,6 +97,18 @@
   border-color: rgba(125, 211, 252, 0.5);
 }
 
+.lineup-link-reset {
+  border: 1px solid rgba(248, 113, 113, 0.32);
+  background: rgba(127, 29, 29, 0.28);
+  color: #fecaca;
+  cursor: pointer;
+}
+
+.lineup-link-reset:hover {
+  border-color: rgba(248, 113, 113, 0.52);
+  background: rgba(127, 29, 29, 0.38);
+}
+
 .lineup-link-secondary {
   background: rgba(30, 41, 59, 0.82);
 }
