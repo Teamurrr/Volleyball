@@ -306,9 +306,7 @@ const Lineup = () => {
               <Link className="lineup-link" to="/">
                 Главная
               </Link>
-              <Link className="lineup-link lineup-link-secondary" to="/admin">
-                Админка
-              </Link>
+              
             </div>
           </div>
         </header>
