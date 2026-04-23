@@ -139,7 +139,7 @@
 
 .admin-table {
   width: 100%;
-  min-width: 720px;
+  min-width: 820px;
   border-collapse: collapse;
 }
 
@@ -179,6 +179,10 @@
 .table-input {
   min-width: 180px;
   margin: 0;
+}
+
+.rating-input {
+  min-width: 96px;
 }
 
 .table-check {
@@ -305,7 +309,7 @@
   }
 
   .admin-table {
-    min-width: 640px;
+    min-width: 760px;
   }
 
   .admin-table th,
@@ -316,6 +320,10 @@
 
   .table-input {
     min-width: 150px;
+  }
+
+  .rating-input {
+    min-width: 90px;
   }
 
   .attendance-actions {

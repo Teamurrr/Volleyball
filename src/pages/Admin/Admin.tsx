@@ -36,6 +36,7 @@ type Info = {
 
 const DEFAULT_START_TIME = "08:00";
 const DEFAULT_END_TIME = "22:00";
+const DEFAULT_PLAYER_elo = 0;
 
 const parseTimeRange = (value?: string) => {
   if (!value) {
@@ -87,6 +88,7 @@ const Admin = () => {
   const [totalPaid, setTotalPaid] = useState("");
   const [playerName, setPlayerName] = useState("");
   const [playerPhoto, setPlayerPhoto] = useState("");
+  const [playerelo, setPlayerelo] = useState(String(DEFAULT_PLAYER_elo));
   const [isSavingPlayer, setIsSavingPlayer] = useState(false);
   const [isSavingAllPlayers, setIsSavingAllPlayers] = useState(false);
   const [playerDrafts, setPlayerDrafts] = useState<Record<string, Omit<Player, "id">>>({});
@@ -157,7 +159,8 @@ const Admin = () => {
           name: player.name,
           willCome: normalizeAttendanceStatus(player.willCome),
           paid: player.paid,
-          photo: player.photo
+          photo: player.photo,
+          elo: player.elo ?? DEFAULT_PLAYER_elo
         };
       });
 
@@ -247,11 +250,13 @@ const Admin = () => {
         name: playerName.trim(),
         willCome: "no",
         paid: false,
-        photo: playerPhoto.trim() || "https://via.placeholder.com/80?text=Player"
+        photo: playerPhoto.trim() || "https://via.placeholder.com/80?text=Player",
+        elo: Number(playerelo) || DEFAULT_PLAYER_elo
       });
 
       setPlayerName("");
       setPlayerPhoto("");
+      setPlayerelo(String(DEFAULT_PLAYER_elo));
     } finally {
       setIsSavingPlayer(false);
     }
@@ -282,7 +287,7 @@ const Admin = () => {
   const updatePlayerDraft = (
     playerId: string,
     field: keyof Omit<Player, "id">,
-    value: string | boolean
+    value: string | number | boolean
   ) => {
     setPlayerDrafts((current) => ({
       ...current,
@@ -301,7 +306,8 @@ const Admin = () => {
       name: draft.name.trim(),
       willCome: draft.willCome,
       paid: draft.paid,
-      photo: draft.photo.trim() || "https://via.placeholder.com/80?text=Player"
+      photo: draft.photo.trim() || "https://via.placeholder.com/80?text=Player",
+      elo: Number(draft.elo) || DEFAULT_PLAYER_elo
     });
   };
 
@@ -318,7 +324,8 @@ const Admin = () => {
             name: draft.name.trim(),
             willCome: draft.willCome,
             paid: draft.paid,
-            photo: draft.photo.trim() || "https://via.placeholder.com/80?text=Player"
+            photo: draft.photo.trim() || "https://via.placeholder.com/80?text=Player",
+            elo: Number(draft.elo) || DEFAULT_PLAYER_elo
           });
         })
       );
@@ -490,6 +497,15 @@ const Admin = () => {
             onChange={(e) => setPlayerPhoto(e.target.value)}
           />
 
+          <input
+            type="number"
+            min="0"
+            step="1"
+            placeholder="Рейтинг"
+            value={playerelo}
+            onChange={(e) => setPlayerelo(e.target.value)}
+          />
+
           <button onClick={createPlayer} disabled={isSavingPlayer}>
             {isSavingPlayer ? "Сохранение..." : "Добавить игрока"}
           </button>
@@ -574,6 +590,7 @@ const Admin = () => {
                 <th>Игрок</th>
                 <th>Придет</th>
                 <th>Оплатил</th>
+                <th>Рейтинг</th>
                 <th>Фото</th>
                 <th>Действие</th>
               </tr>
@@ -650,6 +667,22 @@ const Admin = () => {
                       </label>
                     </td>
                     <td>
+                      <input
+                        className="table-input elo-input"
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={
+                          playerDrafts[player.id]?.elo ??
+                          player.elo ??
+                          DEFAULT_PLAYER_elo
+                        }
+                        onChange={(e) =>
+                          updatePlayerDraft(player.id, "elo", Number(e.target.value))
+                        }
+                      />
+                    </td>
+                    <td>
                       <div className="photo-editor">
                         <input
                           className="table-input"
@@ -685,7 +718,7 @@ const Admin = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="admin-empty">
+                  <td colSpan={6} className="admin-empty">
                     Игроков пока нет
                   </td>
                 </tr>

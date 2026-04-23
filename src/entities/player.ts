@@ -1,11 +1,13 @@
 export type AttendanceStatus = "yes" | "maybe" | "no";
 
 export type Player = {
+  elo: number;
   id: string;
   name: string;
   willCome: AttendanceStatus;
   paid: boolean;
   photo: string;
+  rating?: number;
 };
 
 export const normalizeAttendanceStatus = (
