@@ -137,6 +137,10 @@
   margin-bottom: 14px;
 }
 
+.team-dropzone-header > div {
+  min-width: 0;
+}
+
 .team-dropzone-header h2 {
   margin: 0;
   color: #f8fafc;
@@ -149,6 +153,31 @@
   font-size: 14px;
 }
 
+.team-collapse-button {
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.72);
+  color: #e2e8f0;
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background-color 0.18s ease;
+}
+
+.team-collapse-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(125, 211, 252, 0.44);
+  background: rgba(30, 41, 59, 0.92);
+}
+
+.team-dropzone-collapsed {
+  min-height: 0;
+}
+
 .team-dropzone-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
@@ -159,6 +188,12 @@
   min-height: 150px;
   display: grid;
   place-items: center;
+}
+
+.team-collapsed-note {
+  margin: 10px 0 0;
+  color: #94a3b8;
+  font-size: 13px;
 }
 
 .lineup-board-header {
@@ -342,6 +377,16 @@
 
   .team-dropzone-header h2 {
     font-size: 18px;
+  }
+
+  .team-dropzone-header {
+    align-items: flex-start;
+  }
+
+  .team-collapse-button {
+    min-height: 30px;
+    padding: 0 10px;
+    font-size: 12px;
   }
 
   .lineup-board {

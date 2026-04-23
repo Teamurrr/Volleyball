@@ -74,6 +74,12 @@ const Lineup = () => {
   const { players } = usePlayers();
   const [zonePlayers, setZonePlayers] = useState<Record<ZoneId, string[]>>(createEmptyZones);
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [collapsedTeams, setCollapsedTeams] = useState<Record<ZoneId, boolean>>({
+    team1: false,
+    team2: false,
+    team3: false,
+    pool: false
+  });
   const [layoutReady, setLayoutReady] = useState(false);
   const [savedZones, setSavedZones] = useState<StoredLineup | null>(null);
   const [hasHydratedSavedLayout, setHasHydratedSavedLayout] = useState(false);
@@ -136,6 +142,7 @@ const Lineup = () => {
       return;
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setZonePlayers((current) =>
       syncZonesWithVisiblePlayers(
         hasHydratedSavedLayout ? current : savedZones ?? current,
@@ -206,6 +213,13 @@ const Lineup = () => {
       next[targetZone] = targetList;
       return next;
     });
+  };
+
+  const toggleTeamCollapse = (zoneId: ZoneId) => {
+    setCollapsedTeams((current) => ({
+      ...current,
+      [zoneId]: !current[zoneId]
+    }));
   };
 
   const renderPlayerCard = (playerId: string) => {
@@ -281,7 +295,9 @@ const Lineup = () => {
           {TEAM_ZONES.map((zoneId) => (
             <section
               key={zoneId}
-              className="team-dropzone"
+              className={`team-dropzone ${
+                collapsedTeams[zoneId] ? "team-dropzone-collapsed" : ""
+              }`}
               onDragOver={(event) => event.preventDefault()}
               onDrop={() => {
                 if (!draggedId) return;
@@ -290,18 +306,37 @@ const Lineup = () => {
               }}
             >
               <div className="team-dropzone-header">
-                <h2>{ZONE_TITLES[zoneId]}</h2>
-                <p>{zonePlayers[zoneId].length} игроков</p>
+                <div>
+                  <h2>{ZONE_TITLES[zoneId]}</h2>
+                  <p>{zonePlayers[zoneId].length} игроков</p>
+                </div>
+
+                <button
+                  type="button"
+                  className="team-collapse-button"
+                  onClick={() => toggleTeamCollapse(zoneId)}
+                >
+                  {collapsedTeams[zoneId] ? "Развернуть" : "Свернуть"}
+                </button>
               </div>
 
               {zonePlayers[zoneId].length > 0 ? (
                 <div className="team-dropzone-list">
-                  {zonePlayers[zoneId].map(renderPlayerCard)}
+                  {(collapsedTeams[zoneId]
+                    ? zonePlayers[zoneId].slice(0, 2)
+                    : zonePlayers[zoneId]
+                  ).map(renderPlayerCard)}
                 </div>
               ) : (
                 <div className="lineup-empty team-dropzone-empty">
                   Перетащи сюда игроков
                 </div>
+              )}
+
+              {collapsedTeams[zoneId] && zonePlayers[zoneId].length > 2 && (
+                <p className="team-collapsed-note">
+                  Еще скрыто: {zonePlayers[zoneId].length - 2}
+                </p>
               )}
             </section>
           ))}
