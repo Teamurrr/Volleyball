@@ -9,8 +9,10 @@ import { usePlayers } from "../../features/players/hook";
 
 type ZoneId = "team1" | "team2" | "team3" | "pool";
 type SaveState = "idle" | "saving" | "saved";
+type FormationSlotId = "slot1" | "slot2" | "slot3" | "slot4";
 
 type StoredLineup = Partial<Record<ZoneId, string[]>>;
+type SavedFormations = Record<FormationSlotId, StoredLineup | null>;
 
 const ZONE_TITLES: Record<ZoneId, string> = {
   team1: "Команда 1",
@@ -22,6 +24,7 @@ const ZONE_TITLES: Record<ZoneId, string> = {
 const TEAM_ZONES: ZoneId[] = ["team1", "team2", "team3"];
 const ALL_ZONES: ZoneId[] = ["team1", "team2", "team3", "pool"];
 const LINEUP_DOC_ID = "current";
+const FORMATION_SLOTS: FormationSlotId[] = ["slot1", "slot2", "slot3", "slot4"];
 
 const getAttendancePriority = (value: Player["willCome"]) => {
   if (value === "yes") return 0;
@@ -34,6 +37,13 @@ const createEmptyZones = (): Record<ZoneId, string[]> => ({
   team2: [],
   team3: [],
   pool: []
+});
+
+const createEmptyFormations = (): SavedFormations => ({
+  slot1: null,
+  slot2: null,
+  slot3: null,
+  slot4: null
 });
 
 const syncZonesWithVisiblePlayers = (
@@ -82,8 +92,13 @@ const Lineup = () => {
   });
   const [layoutReady, setLayoutReady] = useState(false);
   const [savedZones, setSavedZones] = useState<StoredLineup | null>(null);
+  const [savedFormations, setSavedFormations] = useState<SavedFormations>(
+    createEmptyFormations
+  );
   const [hasHydratedSavedLayout, setHasHydratedSavedLayout] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("idle");
+
+  // setTimeout(function(){location.reload();}, 10000);
 
   const visiblePlayers = useMemo(
     () =>
@@ -124,8 +139,15 @@ const Lineup = () => {
       const savedZones = snapshot.exists()
         ? (snapshot.data().zones as StoredLineup | undefined) ?? createEmptyZones()
         : createEmptyZones();
+      const formations = snapshot.exists()
+        ? {
+            ...createEmptyFormations(),
+            ...((snapshot.data().formations as Partial<SavedFormations> | undefined) ?? {})
+          }
+        : createEmptyFormations();
 
       setSavedZones(savedZones);
+      setSavedFormations(formations);
       setLayoutReady(true);
       setSaveState("idle");
     };
@@ -165,6 +187,7 @@ const Lineup = () => {
 
       await setDoc(doc(db, "lineup", LINEUP_DOC_ID), {
         zones: zonePlayers,
+        formations: savedFormations,
         updatedAt: Date.now()
       });
 
@@ -174,7 +197,7 @@ const Lineup = () => {
     return () => {
       window.clearTimeout(saveTimer);
     };
-  }, [hasHydratedSavedLayout, layoutReady, zonePlayers]);
+  }, [hasHydratedSavedLayout, layoutReady, savedFormations, zonePlayers]);
 
   useEffect(() => {
     if (saveState !== "saved") {
@@ -189,6 +212,7 @@ const Lineup = () => {
       window.clearTimeout(resetTimer);
     };
   }, [saveState]);
+
 
   const movePlayerToZone = (playerId: string, targetZone: ZoneId, beforePlayerId?: string) => {
     setZonePlayers((current) => {
@@ -235,6 +259,35 @@ const Lineup = () => {
       team3: [],
       pool: visiblePlayerIds
     });
+  };
+
+  const saveFormation = (slotId: FormationSlotId) => {
+    setSavedFormations((current) => ({
+      ...current,
+      [slotId]: {
+        team1: [...zonePlayers.team1],
+        team2: [...zonePlayers.team2],
+        team3: [...zonePlayers.team3],
+        pool: [...zonePlayers.pool]
+      }
+    }));
+  };
+
+  const applyFormation = (slotId: FormationSlotId) => {
+    const formation = savedFormations[slotId];
+    if (!formation) return;
+
+    setZonePlayers(syncZonesWithVisiblePlayers(formation, visiblePlayerIds));
+  };
+
+  const getFormationSummary = (slotId: FormationSlotId) => {
+    const formation = savedFormations[slotId];
+    if (!formation) return "Пусто";
+
+    return `${TEAM_ZONES.reduce(
+      (count, zoneId) => count + (formation[zoneId]?.length ?? 0),
+      0
+    )} игроков сохранено`;
   };
 
   const renderPlayerCard = (playerId: string) => {
@@ -310,6 +363,41 @@ const Lineup = () => {
             </div>
           </div>
         </header>
+
+        <section className="lineup-formations">
+          <div className="lineup-formations-header">
+            <h2>Расстановки</h2>
+          </div>
+
+          <div className="lineup-formations-grid">
+            {FORMATION_SLOTS.map((slotId, index) => (
+              <article key={slotId} className="formation-card">
+                <div className="formation-card-top">
+                  <h3>Расстановка {index + 1}</h3>
+                  <p>{getFormationSummary(slotId)}</p>
+                </div>
+
+                <div className="formation-card-actions">
+                  <button
+                    type="button"
+                    className="formation-button"
+                    onClick={() => saveFormation(slotId)}
+                  >
+                    Сохранить
+                  </button>
+                  <button
+                    type="button"
+                    className="formation-button formation-button-secondary"
+                    onClick={() => applyFormation(slotId)}
+                    disabled={!savedFormations[slotId]}
+                  >
+                    Применить
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
 
         <section className="lineup-teams-grid">
           {TEAM_ZONES.map((zoneId) => (

@@ -113,6 +113,106 @@
   background: rgba(30, 41, 59, 0.82);
 }
 
+.lineup-formations {
+  margin-bottom: 20px;
+  padding: 18px;
+  border-radius: 24px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(8, 15, 28, 0.72);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.lineup-formations-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.lineup-formations-header h2 {
+  margin: 0;
+  color: #f8fafc;
+}
+
+.lineup-formations-header p {
+  margin: 0;
+  color: #94a3b8;
+}
+
+.lineup-formations-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.formation-card {
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(15, 23, 42, 0.82);
+}
+
+.formation-card-top {
+  margin-bottom: 12px;
+}
+
+.formation-card-top h3 {
+  margin: 0 0 6px;
+  color: #f8fafc;
+  font-size: 16px;
+}
+
+.formation-card-top p {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.formation-card-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.formation-button {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid rgba(74, 222, 128, 0.24);
+  border-radius: 12px;
+  background: rgba(22, 163, 74, 0.18);
+  color: #dcfce7;
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    opacity 0.18s ease;
+}
+
+.formation-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(74, 222, 128, 0.42);
+  background: rgba(22, 163, 74, 0.26);
+}
+
+.formation-button:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.formation-button-secondary {
+  border-color: rgba(125, 211, 252, 0.22);
+  background: rgba(14, 116, 144, 0.16);
+  color: #dbeafe;
+}
+
+.formation-button-secondary:hover:not(:disabled) {
+  border-color: rgba(125, 211, 252, 0.42);
+  background: rgba(14, 116, 144, 0.24);
+}
+
 .lineup-board {
   padding: 22px;
   border-radius: 28px;
@@ -372,6 +472,33 @@
     grid-template-columns: 1fr;
     gap: 14px;
     margin-bottom: 14px;
+  }
+
+  .lineup-formations {
+    margin-bottom: 14px;
+    padding: 14px;
+    border-radius: 18px;
+    backdrop-filter: none;
+  }
+
+  .lineup-formations-header {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+
+  .lineup-formations-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .formation-card {
+    padding: 12px;
+    border-radius: 14px;
+  }
+
+  .formation-card-actions {
+    grid-template-columns: 1fr;
   }
 
   .team-dropzone {
