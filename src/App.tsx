@@ -13,7 +13,7 @@ function App() {
     >
       <Routes>
         <Route path="/" element={<Main />} />
-        <Route path="/admin" element={<Admin />} />
+        <Route path="/adminx" element={<Admin />} />
         <Route path="/lineup" element={<Lineup />} />
       </Routes>
     </BrowserRouter>

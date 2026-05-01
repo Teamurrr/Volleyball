@@ -95,6 +95,7 @@ const Admin = () => {
   const [playerelo, setPlayerelo] = useState(String(DEFAULT_PLAYER_elo));
   const [isSavingPlayer, setIsSavingPlayer] = useState(false);
   const [isSavingAllPlayers, setIsSavingAllPlayers] = useState(false);
+  const [isResettingAllPlayers, setIsResettingAllPlayers] = useState(false);
   const [playerDrafts, setPlayerDrafts] = useState<Record<string, PlayerDraft>>({});
 
   const sortedPlayers = useMemo(
@@ -349,6 +350,40 @@ const Admin = () => {
     }
   };
 
+  const resetAllPlayerStatuses = async () => {
+    setIsResettingAllPlayers(true);
+
+    try {
+      await Promise.all(
+        players.map((player) =>
+          updatePlayer(player.id, {
+            willCome: "no",
+            paid: false
+          })
+        )
+      );
+
+      setPlayerDrafts((current) => {
+        const next = { ...current };
+
+        players.forEach((player) => {
+          const draft = next[player.id];
+          if (!draft) return;
+
+          next[player.id] = {
+            ...draft,
+            willCome: "no",
+            paid: false
+          };
+        });
+
+        return next;
+      });
+    } finally {
+      setIsResettingAllPlayers(false);
+    }
+  };
+
   const removePlayer = async (playerId: string) => {
     await deletePlayer(playerId);
 
@@ -593,13 +628,23 @@ const Admin = () => {
             <p>На главной показываются только игроки со статусом "Да" и "Возможно"</p>
           </div>
 
-          <button
-            className="save-all-button save-action-button"
-            onClick={() => void saveAllPlayers()}
-            disabled={isSavingAllPlayers || players.length === 0}
-          >
-            {isSavingAllPlayers ? "Сохраняем..." : "Сохранить всех"}
-          </button>
+          <div className="admin-table-actions">
+            <button
+              className="reset-all-button"
+              onClick={() => void resetAllPlayerStatuses()}
+              disabled={isResettingAllPlayers || isSavingAllPlayers || players.length === 0}
+            >
+              {isResettingAllPlayers ? "Сбрасываем..." : "Всем: не оплачено и не придет"}
+            </button>
+
+            <button
+              className="save-all-button save-action-button"
+              onClick={() => void saveAllPlayers()}
+              disabled={isSavingAllPlayers || isResettingAllPlayers || players.length === 0}
+            >
+              {isSavingAllPlayers ? "Сохраняем..." : "Сохранить всех"}
+            </button>
+          </div>
         </div>
 
         <div className="admin-table-wrap">

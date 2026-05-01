@@ -148,8 +148,21 @@
   margin-bottom: 16px;
 }
 
+.admin-table-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
 .save-all-button {
   white-space: nowrap;
+}
+
+.reset-all-button {
+  white-space: nowrap;
+  background: #f59e0b !important;
+  color: #111827 !important;
 }
 
 .save-action-button::after {
@@ -288,7 +301,16 @@
     align-items: flex-start;
   }
 
+  .admin-table-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
   .save-all-button {
+    width: 100%;
+  }
+
+  .reset-all-button {
     width: 100%;
   }
 
@@ -358,6 +380,10 @@
     margin-bottom: 12px;
   }
 
+  .admin-table-actions {
+    gap: 8px;
+  }
+
   .admin-table {
     min-width: 760px;
   }
@@ -381,6 +407,7 @@
   }
 
   .attendance-actions button,
+  .reset-all-button,
   .save-all-button,
   .save-player-button,
   .delete-player-button {
