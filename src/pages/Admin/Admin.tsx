@@ -109,44 +109,55 @@ const Admin = () => {
   );
 
   const fetchPlaces = async () => {
-    const snap = await getDocs(collection(db, "places"));
+    try {
+      const snap = await getDocs(collection(db, "places"));
 
-    const data: Place[] = snap.docs.map((d) => {
-      const dd = d.data();
-      return {
-        id: d.id,
-        name: dd.name,
-        address: dd.address,
-        addressLink: dd.addressLink,
-        image: dd.image,
-        time: dd.time,
-        isMain: dd.isMain
-      };
-    });
+      const data: Place[] = snap.docs.map((d) => {
+        const dd = d.data();
+        return {
+          id: d.id,
+          name: dd.name,
+          address: dd.address,
+          addressLink: dd.addressLink,
+          image: dd.image,
+          time: dd.time,
+          isMain: dd.isMain
+        };
+      });
 
-    setPlaces(data);
+      setPlaces(data);
+    } catch {
+      setPlaces([]);
+    }
   };
 
   const fetchInfo = async () => {
-    const snap = await getDocs(collection(db, "info"));
+    try {
+      const snap = await getDocs(collection(db, "info"));
 
-    const data: Info[] = snap.docs.map((item) => {
-      const value = item.data();
+      const data: Info[] = snap.docs.map((item) => {
+        const value = item.data();
 
-      return {
-        id: item.id,
-        pass: value.pass || "",
-        qrcode: value.qrcode || "",
-        totalPaid: value.totalPaid
-      };
-    });
+        return {
+          id: item.id,
+          pass: value.pass || "",
+          qrcode: value.qrcode || "",
+          totalPaid: value.totalPaid
+        };
+      });
 
-    const info = data[0];
+      const info = data[0];
 
-    setInfoId(info?.id || "");
-    setPassLink(info?.pass || "");
-    setQrCodeLink(info?.qrcode || "");
-    setTotalPaid(info?.totalPaid != null ? String(info.totalPaid) : "");
+      setInfoId(info?.id || "");
+      setPassLink(info?.pass || "");
+      setQrCodeLink(info?.qrcode || "");
+      setTotalPaid(info?.totalPaid != null ? String(info.totalPaid) : "");
+    } catch {
+      setInfoId("");
+      setPassLink("");
+      setQrCodeLink("");
+      setTotalPaid("");
+    }
   };
 
   useEffect(() => {

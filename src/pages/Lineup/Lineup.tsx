@@ -98,8 +98,6 @@ const Lineup = () => {
   const [hasHydratedSavedLayout, setHasHydratedSavedLayout] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("idle");
 
-  // setTimeout(function(){location.reload();}, 10000);
-
   const visiblePlayers = useMemo(
     () =>
       [...players]
@@ -129,25 +127,31 @@ const Lineup = () => {
     let cancelled = false;
 
     const loadLayout = async () => {
-      const lineupRef = doc(db, "lineup", LINEUP_DOC_ID);
-      const snapshot = await getDoc(lineupRef);
+      try {
+        const lineupRef = doc(db, "lineup", LINEUP_DOC_ID);
+        const snapshot = await getDoc(lineupRef);
 
-      if (cancelled) {
-        return;
+        if (cancelled) {
+          return;
+        }
+
+        const savedZones = snapshot.exists()
+          ? (snapshot.data().zones as StoredLineup | undefined) ?? createEmptyZones()
+          : createEmptyZones();
+        const formations = snapshot.exists()
+          ? {
+              ...createEmptyFormations(),
+              ...((snapshot.data().formations as Partial<SavedFormations> | undefined) ?? {})
+            }
+          : createEmptyFormations();
+
+        setSavedZones(savedZones);
+        setSavedFormations(formations);
+      } catch {
+        setSavedZones(createEmptyZones());
+        setSavedFormations(createEmptyFormations());
       }
 
-      const savedZones = snapshot.exists()
-        ? (snapshot.data().zones as StoredLineup | undefined) ?? createEmptyZones()
-        : createEmptyZones();
-      const formations = snapshot.exists()
-        ? {
-            ...createEmptyFormations(),
-            ...((snapshot.data().formations as Partial<SavedFormations> | undefined) ?? {})
-          }
-        : createEmptyFormations();
-
-      setSavedZones(savedZones);
-      setSavedFormations(formations);
       setLayoutReady(true);
       setSaveState("idle");
     };
@@ -183,15 +187,19 @@ const Lineup = () => {
     }
 
     const saveTimer = window.setTimeout(async () => {
-      setSaveState("saving");
+      try {
+        setSaveState("saving");
 
-      await setDoc(doc(db, "lineup", LINEUP_DOC_ID), {
-        zones: zonePlayers,
-        formations: savedFormations,
-        updatedAt: Date.now()
-      });
+        await setDoc(doc(db, "lineup", LINEUP_DOC_ID), {
+          zones: zonePlayers,
+          formations: savedFormations,
+          updatedAt: Date.now()
+        });
 
-      setSaveState("saved");
+        setSaveState("saved");
+      } catch {
+        setSaveState("idle");
+      }
     }, 450);
 
     return () => {

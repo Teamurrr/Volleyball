@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
+import { collection, getDocs } from "firebase/firestore";
 import "./main.scss";
 
 import { db } from "../../app/firebase";
-import { collection, getDocs } from "firebase/firestore";
 import { usePlayers } from "../../features/players/hook";
 import {
   getAttendanceLabel,
@@ -43,11 +43,11 @@ const Main = () => {
     src: string;
     name: string;
   } | null>(null);
-  const { players } = usePlayers();
+  const { players, playersError } = usePlayers();
 
   const visiblePlayers = useMemo(
     () =>
-      players
+      [...players]
         .filter((player) => {
           const attendance = normalizeAttendanceStatus(player.willCome);
           return attendance === "yes" || attendance === "maybe";
@@ -59,6 +59,7 @@ const Main = () => {
         ),
     [players]
   );
+
   const confirmedPlayersCount = visiblePlayers.filter(
     (player) => normalizeAttendanceStatus(player.willCome) === "yes"
   ).length;
@@ -71,24 +72,28 @@ const Main = () => {
 
   useEffect(() => {
     const fetchPlaces = async () => {
-      const querySnapshot = await getDocs(collection(db, "places"));
+      try {
+        const querySnapshot = await getDocs(collection(db, "places"));
 
-      const data: Place[] = querySnapshot.docs.map((doc) => {
-        const d = doc.data();
+        const data: Place[] = querySnapshot.docs.map((currentDoc) => {
+          const currentData = currentDoc.data();
 
-        return {
-          id: doc.id,
-          name: d.name,
-          address: d.address,
-          addressLink: d.addressLink,
-          image: d.image,
-          time: d.time,
-          isMain: d.isMain
-        };
-      });
+          return {
+            id: currentDoc.id,
+            name: currentData.name,
+            address: currentData.address,
+            addressLink: currentData.addressLink,
+            image: currentData.image,
+            time: currentData.time,
+            isMain: currentData.isMain
+          };
+        });
 
-      const mainPlace = data.find((p) => p.isMain);
-      setPlace(mainPlace || data[0]);
+        const mainPlace = data.find((currentPlace) => currentPlace.isMain);
+        setPlace(mainPlace || data[0] || null);
+      } catch {
+        setPlace(null);
+      }
     };
 
     void fetchPlaces();
@@ -96,25 +101,33 @@ const Main = () => {
 
   useEffect(() => {
     const fetchInfo = async () => {
-      const querySnapshot = await getDocs(collection(db, "info"));
-      const firstDoc = querySnapshot.docs[0];
+      try {
+        const querySnapshot = await getDocs(collection(db, "info"));
+        const firstDoc = querySnapshot.docs[0];
 
-      if (!firstDoc) {
+        if (!firstDoc) {
+          setInfo({
+            pass: "",
+            qrcode: "",
+            totalPaid: 0
+          });
+          return;
+        }
+
+        const data = firstDoc.data();
+
+        setInfo({
+          pass: data.pass || "",
+          qrcode: data.qrcode || "",
+          totalPaid: Number(data.totalPaid || 0)
+        });
+      } catch {
         setInfo({
           pass: "",
           qrcode: "",
           totalPaid: 0
         });
-        return;
       }
-
-      const data = firstDoc.data();
-
-      setInfo({
-        pass: data.pass || "",
-        qrcode: data.qrcode || "",
-        totalPaid: Number(data.totalPaid || 0)
-      });
     };
 
     void fetchInfo();
@@ -139,7 +152,7 @@ const Main = () => {
                 rel="noopener noreferrer"
                 className="address"
               >
-                {place?.address}
+                {place.address}
               </a>
             ) : (
               <p className="address">{place?.address}</p>
@@ -165,11 +178,7 @@ const Main = () => {
                   })
                 }
               >
-                <img
-                  className="info-image"
-                  src={info.pass}
-                  alt="Пропуск"
-                />
+                <img className="info-image" src={info.pass} alt="Пропуск" />
               </button>
             </div>
           )}
@@ -187,11 +196,7 @@ const Main = () => {
                   })
                 }
               >
-                <img
-                  className="info-image"
-                  src={info.qrcode}
-                  alt="QR для оплаты"
-                />
+                <img className="info-image" src={info.qrcode} alt="QR для оплаты" />
               </button>
 
               <div className="payment-summary">
@@ -202,8 +207,8 @@ const Main = () => {
                   </>
                 ) : (
                   <p className="payment-summary-note">
-                    Сумма появится, когда будет указана общая оплата и хотя бы 2 игрока
-                    в списке.
+                    Сумма появится, когда будет указана общая оплата и хотя бы 2
+                    игрока в списке.
                   </p>
                 )}
               </div>
@@ -219,6 +224,8 @@ const Main = () => {
             Всего: {visiblePlayers.length} ({confirmedPlayersCount} точно)
           </p>
         </div>
+
+        {playersError && <p className="players-empty">{playersError}</p>}
 
         <div className="players-table-wrap">
           <table className="players-table">
@@ -257,11 +264,7 @@ const Main = () => {
                             })
                           }
                         >
-                          <img
-                            className="player-photo"
-                            src={player.photo}
-                            alt={player.name}
-                          />
+                          <img className="player-photo" src={player.photo} alt={player.name} />
                         </button>
                       </td>
                     </tr>
@@ -280,23 +283,20 @@ const Main = () => {
       </section>
 
       {selectedPhoto && (
-        <div
-          className="photo-modal"
-          onClick={() => setSelectedPhoto(null)}
-        >
+        <div className="photo-modal" onClick={() => setSelectedPhoto(null)}>
           <button
             type="button"
             className="photo-modal-close"
             onClick={() => setSelectedPhoto(null)}
           >
-            ×
+            x
           </button>
 
           <img
             className="photo-modal-image"
             src={selectedPhoto.src}
             alt={selectedPhoto.name}
-            onClick={(e) => e.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
           />
         </div>
       )}

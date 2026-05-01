@@ -4,11 +4,22 @@ import type { Player } from "../../entities/player";
 
 export const usePlayers = () => {
   const [players, setPlayers] = useState<Player[]>([]);
+  const [playersError, setPlayersError] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = subscribePlayers(setPlayers);
+    const unsubscribe = subscribePlayers(
+      (nextPlayers) => {
+        setPlayers(nextPlayers);
+        setPlayersError(null);
+      },
+      () => {
+        setPlayers([]);
+        setPlayersError("Не удалось загрузить игроков.");
+      }
+    );
+
     return () => unsubscribe();
   }, []);
 
-  return { players };
+  return { players, playersError };
 };
