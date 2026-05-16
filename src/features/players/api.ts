@@ -22,6 +22,7 @@ export const subscribePlayers = (
         return {
           id: currentDoc.id,
           ...value,
+          position: typeof value.position === "string" ? value.position : "",
           willCome: normalizeAttendanceStatus(
             value.willCome as Player["willCome"] | boolean | undefined
           )

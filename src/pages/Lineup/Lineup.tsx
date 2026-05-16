@@ -327,11 +327,31 @@ const Lineup = () => {
       >
         <div className="lineup-card-main">
           <span className="lineup-status-dot" />
-          <span className="lineup-player-name">{player.name}</span>
+          <div className="lineup-player-meta">
+            <span className="lineup-player-name">{player.name}</span>
+            {/* {player.position && <span className="lineup-player-position">{player.position}</span>} */}
+          </div>
         </div>
 
         <div className="lineup-elo">
-          <span className="lineup-elo-label">ELO</span>
+
+          {/* <span className="lineup-elo-label">
+            ELO
+          </span> */}
+         
+
+      {
+        player.position ? (
+          <span className="lineup-player-position">
+            {player.position}
+          </span>
+        ) : (
+          <span className="lineup-elo-label">
+            ELO
+          </span>
+        )
+      }
+
           <strong>{player.elo ?? 0}</strong>
         </div>
       </article>
@@ -346,8 +366,7 @@ const Lineup = () => {
             <p className="lineup-kicker">Игровой состав</p>
             <h1>Команды</h1>
             <p className="lineup-subtitle">
-              Нужно нажать и зажать имя игрока а потом перетащить его в команду. На телефоне можно одним пальцем 
-              держать игрока а другим скролить страницу
+              name - girl <br /> dobro - middle quality player <br />anykey - almost good at everything <br /> all-round - good at everything <br />X - mbappe mentality
             </p>
           </div>
 

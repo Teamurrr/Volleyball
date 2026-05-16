@@ -3,6 +3,7 @@ import { addPlayer } from "../features/players/api";
 
 export const AddPlayerForm = () => {
   const [name, setName] = useState("");
+  const [position, setPosition] = useState("");
   const [file, setFile] = useState<File | null>(null);
 
   // 🔥 загрузка в Cloudinary
@@ -38,6 +39,7 @@ export const AddPlayerForm = () => {
 
     await addPlayer({
       name,
+      position,
       willCome: "no",
       paid: false,
       photo: photoUrl,
@@ -45,6 +47,7 @@ export const AddPlayerForm = () => {
     });
 
     setName("");
+    setPosition("");
     setFile(null);
   };
 
@@ -56,6 +59,12 @@ export const AddPlayerForm = () => {
         placeholder="Имя"
         value={name}
         onChange={e => setName(e.target.value)}
+      />
+
+      <input
+        placeholder="Амплуа"
+        value={position}
+        onChange={e => setPosition(e.target.value)}
       />
 
       <input

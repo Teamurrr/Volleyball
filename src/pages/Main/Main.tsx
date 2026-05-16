@@ -232,6 +232,7 @@ const Main = () => {
             <thead>
               <tr>
                 <th>Игрок</th>
+                <th>Амплуа</th>
                 <th>Придет</th>
                 <th>Оплатил</th>
                 <th>Фото</th>
@@ -249,6 +250,7 @@ const Main = () => {
                       className={attendance === "maybe" ? "player-row-maybe" : undefined}
                     >
                       <td className="player-name">{player.name}</td>
+                      <td>{player.position || "-"}</td>
                       <td className={attendance === "maybe" ? "player-status-maybe" : undefined}>
                         {getAttendanceLabel(attendance)}
                       </td>
@@ -272,7 +274,7 @@ const Main = () => {
                 })
               ) : (
                 <tr>
-                  <td colSpan={4} className="players-empty">
+                  <td colSpan={5} className="players-empty">
                     Пока никто не отметил, что придет
                   </td>
                 </tr>

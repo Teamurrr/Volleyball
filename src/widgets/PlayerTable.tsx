@@ -19,6 +19,7 @@ export const PlayerTable = ({ players }: Props) => {
       <thead>
         <tr>
           <th>Имя</th>
+          <th>Амплуа</th>
           <th>Придет</th>
           <th>Оплатил</th>
           <th>Фото</th>
@@ -29,6 +30,7 @@ export const PlayerTable = ({ players }: Props) => {
         {players.map(p => (
           <tr key={p.id}>
             <td>{p.name}</td>
+            <td>{p.position || "-"}</td>
 
             <td>
               <button onClick={() => toggleCome(p)}>

@@ -4,6 +4,7 @@ export type Player = {
   elo: number;
   id: string;
   name: string;
+  position: string;
   willCome: AttendanceStatus;
   paid: boolean;
   photo: string;

@@ -91,6 +91,7 @@ const Admin = () => {
   const [qrCodeLink, setQrCodeLink] = useState("");
   const [totalPaid, setTotalPaid] = useState("");
   const [playerName, setPlayerName] = useState("");
+  const [playerPosition, setPlayerPosition] = useState("");
   const [playerPhoto, setPlayerPhoto] = useState("");
   const [playerelo, setPlayerelo] = useState(String(DEFAULT_PLAYER_elo));
   const [isSavingPlayer, setIsSavingPlayer] = useState(false);
@@ -173,6 +174,7 @@ const Admin = () => {
       players.forEach((player) => {
         next[player.id] = current[player.id] ?? {
           name: player.name,
+          position: player.position ?? "",
           willCome: normalizeAttendanceStatus(player.willCome),
           paid: player.paid,
           photo: player.photo,
@@ -264,6 +266,7 @@ const Admin = () => {
     try {
       await addPlayer({
         name: playerName.trim(),
+        position: playerPosition.trim(),
         willCome: "no",
         paid: false,
         photo: playerPhoto.trim() || "https://via.placeholder.com/80?text=Player",
@@ -271,6 +274,7 @@ const Admin = () => {
       });
 
       setPlayerName("");
+      setPlayerPosition("");
       setPlayerPhoto("");
       setPlayerelo(String(DEFAULT_PLAYER_elo));
     } finally {
@@ -320,6 +324,7 @@ const Admin = () => {
 
     await updatePlayer(playerId, {
       name: draft.name.trim(),
+      position: draft.position.trim(),
       willCome: draft.willCome,
       paid: draft.paid,
       photo: draft.photo.trim() || "https://via.placeholder.com/80?text=Player",
@@ -338,6 +343,7 @@ const Admin = () => {
 
           return updatePlayer(player.id, {
             name: draft.name.trim(),
+            position: draft.position.trim(),
             willCome: draft.willCome,
             paid: draft.paid,
             photo: draft.photo.trim() || "https://via.placeholder.com/80?text=Player",
@@ -544,6 +550,12 @@ const Admin = () => {
           />
 
           <input
+            placeholder="Амплуа"
+            value={playerPosition}
+            onChange={(e) => setPlayerPosition(e.target.value)}
+          />
+
+          <input
             placeholder="Ссылка на фото"
             value={playerPhoto}
             onChange={(e) => setPlayerPhoto(e.target.value)}
@@ -652,6 +664,7 @@ const Admin = () => {
             <thead>
               <tr>
                 <th>Игрок</th>
+                <th>Амплуа</th>
                 <th>Придет</th>
                 <th>Оплатил</th>
                 <th>Рейтинг</th>
@@ -670,6 +683,16 @@ const Admin = () => {
                         value={playerDrafts[player.id]?.name ?? player.name}
                         onChange={(e) =>
                           updatePlayerDraft(player.id, "name", e.target.value)
+                        }
+                      />
+                    </td>
+                    <td>
+                      <input
+                        className="table-input"
+                        placeholder="Амплуа"
+                        value={playerDrafts[player.id]?.position ?? player.position}
+                        onChange={(e) =>
+                          updatePlayerDraft(player.id, "position", e.target.value)
                         }
                       />
                     </td>
@@ -786,7 +809,7 @@ const Admin = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="admin-empty">
+                  <td colSpan={7} className="admin-empty">
                     Игроков пока нет
                   </td>
                 </tr>
