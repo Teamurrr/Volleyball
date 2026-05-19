@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Main from "./pages/Main/Main";
 import Admin from "./pages/Admin/Admin";
 import Lineup from "./pages/Lineup/Lineup";
+import Reports from "./pages/Reports/Reports";
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
         <Route path="/" element={<Main />} />
         <Route path="/adminx" element={<Admin />} />
         <Route path="/lineup" element={<Lineup />} />
+        <Route path="/reports" element={<Reports />} />
       </Routes>
     </BrowserRouter>
   );

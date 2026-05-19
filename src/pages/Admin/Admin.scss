@@ -4,6 +4,7 @@
   background: #0f172a;
   color: #e2e8f0;
   box-sizing: border-box;
+  text-align: left;
 }
 
 .admin h1 {
@@ -14,6 +15,42 @@
 .admin h2 {
   margin: 0 0 16px;
   color: #f8fafc;
+}
+
+.admin-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.admin-topbar-note {
+  color: #94a3b8;
+}
+
+.admin-topbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.admin-link-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 11px 16px;
+  border-radius: 12px;
+  background: rgba(59, 130, 246, 0.22);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  color: #dbeafe;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.attendance-report-button {
+  white-space: nowrap;
 }
 
 .admin-grid {
@@ -292,6 +329,20 @@
 }
 
 @media (max-width: 900px) {
+  .admin-topbar {
+    flex-direction: column;
+  }
+
+  .admin-topbar-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .attendance-report-button,
+  .admin-link-button {
+    width: 100%;
+  }
+
   .admin-grid {
     grid-template-columns: 1fr;
   }

@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import "./Admin.scss";
+import { Link } from "react-router-dom";
 
 import { db } from "../../app/firebase";
 import {
@@ -14,8 +15,10 @@ import {
   type AttendanceStatus,
   type Player
 } from "../../entities/player";
+import type { AttendanceReportPlayer } from "../../entities/attendanceReport";
 import { addPlayer, deletePlayer, updatePlayer } from "../../features/players/api";
 import { usePlayers } from "../../features/players/hook";
+import { createAttendanceReport } from "../../features/reports/api";
 
 type Place = {
   id: string;
@@ -97,6 +100,7 @@ const Admin = () => {
   const [isSavingPlayer, setIsSavingPlayer] = useState(false);
   const [isSavingAllPlayers, setIsSavingAllPlayers] = useState(false);
   const [isResettingAllPlayers, setIsResettingAllPlayers] = useState(false);
+  const [isSavingAttendanceReport, setIsSavingAttendanceReport] = useState(false);
   const [playerDrafts, setPlayerDrafts] = useState<Record<string, PlayerDraft>>({});
 
   const sortedPlayers = useMemo(
@@ -400,9 +404,58 @@ const Admin = () => {
     });
   };
 
+  const saveAttendanceReport = async () => {
+    if (players.length === 0) return;
+
+    setIsSavingAttendanceReport(true);
+
+    try {
+      const reportPlayers: AttendanceReportPlayer[] = players.map((player) => {
+        const draft = playerDrafts[player.id];
+
+        return {
+          playerId: player.id,
+          name: draft?.name.trim() || player.name,
+          position: draft?.position.trim() || player.position || "",
+          elo:
+            draft?.elo === "" || draft?.elo == null
+              ? player.elo ?? DEFAULT_PLAYER_elo
+              : Number(draft.elo),
+          willCome: normalizeAttendanceStatus(draft?.willCome ?? player.willCome),
+          paid: draft?.paid ?? player.paid
+        };
+      });
+
+      await createAttendanceReport(reportPlayers);
+    } finally {
+      setIsSavingAttendanceReport(false);
+    }
+  };
+
   return (
     <div className="admin">
-      <h1>Admin Panel</h1>
+      <div className="admin-topbar">
+        <div>
+          <h1>Admin Panel</h1>
+          <p className="admin-topbar-note">
+            Здесь можно фиксировать текущий срез посещаемости и сразу смотреть отчеты.
+          </p>
+        </div>
+
+        <div className="admin-topbar-actions">
+          <button
+            type="button"
+            className="attendance-report-button"
+            onClick={() => void saveAttendanceReport()}
+            disabled={isSavingAttendanceReport || players.length === 0}
+          >
+            {isSavingAttendanceReport ? "Сохраняем отчет..." : "Зафиксировать посещаемость"}
+          </button>
+          <Link className="admin-link-button" to="/reports">
+            Открыть отчеты
+          </Link>
+        </div>
+      </div>
 
       <div className="admin-grid">
         <section className="admin-card">
