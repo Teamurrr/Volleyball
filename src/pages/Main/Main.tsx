@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
 import "./main.scss";
 
 import { db } from "../../app/firebase";
@@ -33,6 +34,7 @@ const getAttendancePriority = (value: AttendanceStatus) => {
 };
 
 const Main = () => {
+  const navigate = useNavigate();
   const [place, setPlace] = useState<Place | null>(null);
   const [info, setInfo] = useState<Info>({
     pass: "",
@@ -135,6 +137,19 @@ const Main = () => {
 
   return (
     <div className="main-page">
+      <button
+        type="button"
+        className="secret-nav-button"
+        aria-label="Open admin"
+        onClick={() => navigate("/adminx")}
+      />
+      <button
+        type="button"
+        className="secret-nav-button secret-nav-button-lineup"
+        aria-label="Open lineup"
+        onClick={() => navigate("/lineup")}
+      />
+
       <div
         className="main"
         style={{
