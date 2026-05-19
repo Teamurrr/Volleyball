@@ -26,12 +26,6 @@ const ALL_ZONES: ZoneId[] = ["team1", "team2", "team3", "pool"];
 const LINEUP_DOC_ID = "current";
 const FORMATION_SLOTS: FormationSlotId[] = ["slot1", "slot2", "slot3", "slot4"];
 
-const getAttendancePriority = (value: Player["willCome"]) => {
-  if (value === "yes") return 0;
-  if (value === "maybe") return 1;
-  return 2;
-};
-
 const createEmptyZones = (): Record<ZoneId, string[]> => ({
   team1: [],
   team2: [],
@@ -106,9 +100,12 @@ const Lineup = () => {
           return status === "yes" || status === "maybe";
         })
         .sort((left, right) => {
-          const leftStatus = normalizeAttendanceStatus(left.willCome);
-          const rightStatus = normalizeAttendanceStatus(right.willCome);
-          return getAttendancePriority(leftStatus) - getAttendancePriority(rightStatus);
+          const eloDiff = (right.elo ?? 0) - (left.elo ?? 0);
+          if (eloDiff !== 0) {
+            return eloDiff;
+          }
+
+          return left.name.localeCompare(right.name);
         }),
     [players]
   );
@@ -259,6 +256,19 @@ const Lineup = () => {
       const player = playersMap.get(playerId);
       return total + (player?.elo ?? 0);
     }, 0);
+
+  const getSortedZonePlayerIds = (zoneId: ZoneId) =>
+    [...zonePlayers[zoneId]].sort((leftId, rightId) => {
+      const leftPlayer = playersMap.get(leftId);
+      const rightPlayer = playersMap.get(rightId);
+      const eloDiff = (rightPlayer?.elo ?? 0) - (leftPlayer?.elo ?? 0);
+
+      if (eloDiff !== 0) {
+        return eloDiff;
+      }
+
+      return (leftPlayer?.name ?? "").localeCompare(rightPlayer?.name ?? "");
+    });
 
   const resetTeams = () => {
     setZonePlayers({
@@ -462,8 +472,8 @@ const Lineup = () => {
               {zonePlayers[zoneId].length > 0 ? (
                 <div className="team-dropzone-list">
                   {(collapsedTeams[zoneId]
-                    ? zonePlayers[zoneId].slice(0, 2)
-                    : zonePlayers[zoneId]
+                    ? getSortedZonePlayerIds(zoneId).slice(0, 2)
+                    : getSortedZonePlayerIds(zoneId)
                   ).map(renderPlayerCard)}
                 </div>
               ) : (
@@ -497,7 +507,7 @@ const Lineup = () => {
 
           {zonePlayers.pool.length > 0 ? (
             <div className="lineup-list">
-              {zonePlayers.pool.map(renderPlayerCard)}
+              {getSortedZonePlayerIds("pool").map(renderPlayerCard)}
             </div>
           ) : (
             <div className="lineup-empty">
