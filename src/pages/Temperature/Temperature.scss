@@ -275,6 +275,7 @@
 
 .temperature-chart-wrap {
   overflow: hidden;
+  position: relative;
 }
 
 .temperature-chart {
@@ -300,6 +301,46 @@
   fill: #ffffff;
   stroke: #8fe0ff;
   stroke-width: 2;
+  cursor: pointer;
+}
+
+.temperature-chart-axis-label {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(223, 233, 248, 0.7);
+}
+
+.temperature-chart-axis-label-y {
+  margin-bottom: 8px;
+}
+
+.temperature-chart-axis-label-x {
+  margin-top: 8px;
+  text-align: center;
+}
+
+.temperature-chart-y-label,
+.temperature-chart-x-label {
+  fill: rgba(223, 233, 248, 0.72);
+  font-size: 12px;
+}
+
+.temperature-chart-tooltip-box {
+  fill: rgba(7, 17, 31, 0.94);
+  stroke: rgba(143, 223, 255, 0.3);
+  stroke-width: 1;
+}
+
+.temperature-chart-tooltip-label {
+  fill: rgba(223, 233, 248, 0.82);
+  font-size: 12px;
+}
+
+.temperature-chart-tooltip-value {
+  fill: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .temperature-chart-footer {
@@ -424,6 +465,11 @@
 
   .temperature-chart {
     height: 240px;
+  }
+
+  .temperature-chart-y-label,
+  .temperature-chart-x-label {
+    font-size: 11px;
   }
 
   .temperature-chart-footer {

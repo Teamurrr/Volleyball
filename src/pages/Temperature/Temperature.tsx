@@ -30,6 +30,13 @@ type TemperatureResponse = {
   error?: string;
 };
 
+type ChartTooltip = {
+  x: number;
+  y: number;
+  label: string;
+  value: string;
+};
+
 const PERIOD_OPTIONS = [
   { value: "day", label: "День", heading: "За последние 24 часа" },
   { value: "week", label: "Неделя", heading: "За последние 7 дней" },
@@ -42,7 +49,7 @@ type ReportPeriod = (typeof PERIOD_OPTIONS)[number]["value"];
 const REFRESH_INTERVAL_MS = 5000;
 const CHART_WIDTH = 960;
 const CHART_HEIGHT = 280;
-const CHART_PADDING_X = 24;
+const CHART_PADDING_X = 56;
 const CHART_PADDING_Y = 20;
 
 const formatUpdatedAt = (value: number | null) => {
@@ -145,6 +152,7 @@ const Temperature = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const [tooltip, setTooltip] = useState<ChartTooltip | null>(null);
   const isAlertLoopRunningRef = useRef(false);
   const selectedPeriodRef = useRef<ReportPeriod>("day");
 
@@ -165,7 +173,10 @@ const Temperature = () => {
     return result;
   };
 
-  const loadTemperature = async (showLoader = false, period = selectedPeriodRef.current) => {
+  const loadTemperature = async (
+    showLoader = false,
+    period = selectedPeriodRef.current
+  ) => {
     if (showLoader) {
       setIsLoading(true);
     } else {
@@ -192,7 +203,6 @@ const Temperature = () => {
   useEffect(() => {
     selectedPeriodRef.current = selectedPeriod;
     void loadTemperature(true, selectedPeriod);
-
     return undefined;
   }, [selectedPeriod]);
 
@@ -257,9 +267,7 @@ const Temperature = () => {
     const maxValue =
       report?.max ?? (latestTemperature !== null ? latestTemperature : null);
 
-    const visiblePoints = points.filter(
-      (point) => point.temperature !== null
-    );
+    const visiblePoints = points.filter((point) => point.temperature !== null);
 
     if (visiblePoints.length === 0 || minValue === null || maxValue === null) {
       return null;
@@ -280,6 +288,33 @@ const Temperature = () => {
   const selectedPeriodOption =
     PERIOD_OPTIONS.find((option) => option.value === selectedPeriod) ??
     PERIOD_OPTIONS[0];
+
+  const xAxisLabels = useMemo(() => {
+    if (!chart || chart.points.length === 0) {
+      return [];
+    }
+
+    const labelCount: number = selectedPeriod === "day" ? 4 : 5;
+    const lastIndex = chart.points.length - 1;
+    const drawableWidth = CHART_WIDTH - CHART_PADDING_X * 2;
+
+    return Array.from({ length: labelCount }, (_, index) => {
+      const ratio = labelCount === 1 ? 0 : index / (labelCount - 1);
+      const pointIndex = Math.round(lastIndex * ratio);
+      const point = chart.points[pointIndex]!;
+
+      return {
+        x:
+          chart.points.length === 1
+            ? CHART_WIDTH / 2
+            : CHART_PADDING_X + (drawableWidth / lastIndex) * pointIndex,
+        label:
+          selectedPeriod === "day"
+            ? formatShortTime(point.createdAt)
+            : formatShortDate(point.createdAt)
+      };
+    });
+  }, [chart, selectedPeriod]);
 
   return (
     <main className="temperature-page">
@@ -380,11 +415,14 @@ const Temperature = () => {
 
           {chart ? (
             <div className="temperature-chart-wrap">
+              <div className="temperature-chart-axis-label temperature-chart-axis-label-y">
+                Температура, °C
+              </div>
               <svg
                 className="temperature-chart"
                 viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
                 role="img"
-                aria-label="График температуры за день"
+                aria-label="График температуры за выбранный период"
                 preserveAspectRatio="none"
               >
                 {[0, 0.5, 1].map((ratio) => {
@@ -403,6 +441,27 @@ const Temperature = () => {
                     />
                   );
                 })}
+
+                {[chart.maxValue, (chart.maxValue + chart.minValue) / 2, chart.minValue].map(
+                  (value, index) => {
+                    const ratio = index / 2;
+                    const y =
+                      CHART_PADDING_Y +
+                      (CHART_HEIGHT - CHART_PADDING_Y * 2) * ratio;
+
+                    return (
+                      <text
+                        key={`${value}-${index}`}
+                        x={CHART_PADDING_X - 12}
+                        y={y + 4}
+                        textAnchor="end"
+                        className="temperature-chart-y-label"
+                      >
+                        {value.toFixed(1)}
+                      </text>
+                    );
+                  }
+                )}
 
                 <path d={chart.path} className="temperature-chart-line" />
 
@@ -425,20 +484,59 @@ const Temperature = () => {
                     ((point.temperature - chart.minValue) / safeRange) *
                       drawableHeight;
 
+                  const label =
+                    selectedPeriod === "day"
+                      ? formatShortTime(point.createdAt)
+                      : formatShortDate(point.createdAt);
+                  const value = `${point.temperature.toFixed(2)} ${point.unit}`;
+
                   return (
                     <circle
                       key={`${point.createdAt}-${index}`}
                       cx={x}
                       cy={y}
-                      r="4"
+                      r="5"
                       className="temperature-chart-point"
-                    >
-                      <title>
-                        {`${selectedPeriod === "day" ? formatShortTime(point.createdAt) : formatShortDate(point.createdAt)} - ${point.temperature.toFixed(2)} ${point.unit}`}
-                      </title>
-                    </circle>
+                      onMouseEnter={() => setTooltip({ x, y, label, value })}
+                      onMouseMove={() => setTooltip({ x, y, label, value })}
+                      onMouseLeave={() => setTooltip(null)}
+                    />
                   );
                 })}
+
+                {xAxisLabels.map((item, index) => (
+                  <text
+                    key={`${item.label}-${index}`}
+                    x={item.x}
+                    y={CHART_HEIGHT - 2}
+                    textAnchor="middle"
+                    className="temperature-chart-x-label"
+                  >
+                    {item.label}
+                  </text>
+                ))}
+
+                {tooltip && (
+                  <g
+                    transform={`translate(${Math.min(
+                      tooltip.x + 12,
+                      CHART_WIDTH - 140
+                    )} ${Math.max(tooltip.y - 56, 16)})`}
+                  >
+                    <rect
+                      width="128"
+                      height="46"
+                      rx="12"
+                      className="temperature-chart-tooltip-box"
+                    />
+                    <text x="12" y="18" className="temperature-chart-tooltip-label">
+                      {tooltip.label}
+                    </text>
+                    <text x="12" y="34" className="temperature-chart-tooltip-value">
+                      {tooltip.value}
+                    </text>
+                  </g>
+                )}
               </svg>
 
               <div className="temperature-chart-footer">
@@ -456,6 +554,9 @@ const Temperature = () => {
                       : formatShortDate(report.to)
                     : "--"}
                 </span>
+              </div>
+              <div className="temperature-chart-axis-label temperature-chart-axis-label-x">
+                {selectedPeriod === "day" ? "Время" : "Дата"}
               </div>
             </div>
           ) : (
