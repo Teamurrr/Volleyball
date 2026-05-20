@@ -46,7 +46,6 @@ const getTemperatureAlert = (value: number | null) => {
 
   if (value > 40) {
     return {
-      tone: "hot",
       title: "Слишком жарко",
       message: "Клиентам жарко."
     } as const;
@@ -54,7 +53,6 @@ const getTemperatureAlert = (value: number | null) => {
 
   if (value < 22) {
     return {
-      tone: "cold",
       title: "Слишком холодно",
       message: "Клиенты заболеют."
     } as const;
@@ -68,9 +66,24 @@ const Temperature = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
-  const currentTemperature = data?.temperature ?? null;
-  const temperatureAlert = getTemperatureAlert(currentTemperature);
-  const lastAlertToneRef = useRef<string | null>(null);
+  const isAlertLoopRunningRef = useRef(false);
+
+  const fetchTemperature = async () => {
+    const response = await fetch("/api/temperature", {
+      method: "GET",
+      headers: {
+        Accept: "application/json"
+      }
+    });
+
+    const result = (await response.json()) as TemperatureResponse;
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || "Не удалось получить температуру");
+    }
+
+    return result.latest;
+  };
 
   const loadTemperature = async (showLoader = false) => {
     if (showLoader) {
@@ -80,20 +93,8 @@ const Temperature = () => {
     }
 
     try {
-      const response = await fetch("/api/temperature", {
-        method: "GET",
-        headers: {
-          Accept: "application/json"
-        }
-      });
-
-      const result = (await response.json()) as TemperatureResponse;
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || "Не удалось получить температуру");
-      }
-
-      setData(result.latest);
+      const latest = await fetchTemperature();
+      setData(latest);
       setError("");
     } catch (requestError) {
       setError(
@@ -120,22 +121,42 @@ const Temperature = () => {
   }, []);
 
   useEffect(() => {
-    if (isLoading || error) {
+    if (isLoading || error || isAlertLoopRunningRef.current) {
       return;
     }
 
-    if (!temperatureAlert) {
-      lastAlertToneRef.current = null;
+    const initialAlert = getTemperatureAlert(data?.temperature ?? null);
+
+    if (!initialAlert) {
       return;
     }
 
-    if (lastAlertToneRef.current === temperatureAlert.tone) {
-      return;
-    }
+    isAlertLoopRunningRef.current = true;
 
-    window.alert(`${temperatureAlert.title}. ${temperatureAlert.message}`);
-    lastAlertToneRef.current = temperatureAlert.tone;
-  }, [temperatureAlert, isLoading, error]);
+    void (async () => {
+      let nextAlert: ReturnType<typeof getTemperatureAlert> = initialAlert;
+
+      while (nextAlert) {
+        window.alert(`${nextAlert.title}. ${nextAlert.message}`);
+
+        try {
+          const latest = await fetchTemperature();
+          setData(latest);
+          setError("");
+          nextAlert = getTemperatureAlert(latest?.temperature ?? null);
+        } catch (requestError) {
+          setError(
+            requestError instanceof Error
+              ? requestError.message
+              : "Не удалось получить температуру"
+          );
+          nextAlert = null;
+        }
+      }
+
+      isAlertLoopRunningRef.current = false;
+    })();
+  }, [data, isLoading, error]);
 
   return (
     <main className="temperature-page">
@@ -205,7 +226,6 @@ const Temperature = () => {
             </p>
           )}
         </section>
-
       </div>
     </main>
   );
