@@ -14,7 +14,7 @@ type TemperatureResponse = {
   error?: string;
 };
 
-const REFRESH_INTERVAL_MS = 15000;
+const REFRESH_INTERVAL_MS = 5000;
 
 const formatUpdatedAt = (value: number | null) => {
   if (!value) {
