@@ -1,11 +1,10 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { initializeApp, getApps } from "firebase/app";
 import {
-  addDoc,
-  collection,
-  getDocs,
+  doc,
+  getDoc,
   getFirestore,
-  updateDoc
+  setDoc
 } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -21,10 +20,18 @@ const firebaseConfig = {
 const app = getApps().length ? getApps()[0]! : initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const INFO_COLLECTION = "info";
+const TEMPERATURE_DOC_ID = "temperature";
+const LEGACY_INFO_DOC_ID = "info";
 const DAY_MS = 24 * 60 * 60 * 1000;
-const HISTORY_RETENTION_MS = 31 * DAY_MS;
+const WEEK_MS = 7 * DAY_MS;
+const MONTH_MS = 30 * DAY_MS;
+const HALF_YEAR_MS = 183 * DAY_MS;
+const HISTORY_RETENTION_MS = HALF_YEAR_MS;
 const MAX_HISTORY_POINTS = 6000;
 const MAX_CHART_POINTS = 96;
+const VALID_PERIODS = ["day", "week", "month", "halfYear"] as const;
+
+type ReportPeriod = (typeof VALID_PERIODS)[number];
 
 type ParsedPayload = {
   temperature: number | null;
@@ -207,6 +214,20 @@ const downsampleHistory = (
   });
 };
 
+const getPeriodWindow = (period: ReportPeriod) => {
+  switch (period) {
+    case "week":
+      return WEEK_MS;
+    case "month":
+      return MONTH_MS;
+    case "halfYear":
+      return HALF_YEAR_MS;
+    case "day":
+    default:
+      return DAY_MS;
+  }
+};
+
 export default async function handler(
   req: VercelRequest,
   res: VercelResponse
@@ -218,29 +239,41 @@ export default async function handler(
       return res.status(204).end();
     }
 
-    const infoSnapshot = await getDocs(collection(db, INFO_COLLECTION));
-    const infoDoc = infoSnapshot.docs[0];
-    const infoData = infoDoc?.data();
-    const history = normalizeHistory(infoData?.temperatureHistory);
+    const temperatureRef = doc(db, INFO_COLLECTION, TEMPERATURE_DOC_ID);
+    const legacyInfoRef = doc(db, INFO_COLLECTION, LEGACY_INFO_DOC_ID);
+    const [temperatureDoc, legacyInfoDoc] = await Promise.all([
+      getDoc(temperatureRef),
+      getDoc(legacyInfoRef)
+    ]);
+
+    const temperatureData = temperatureDoc.exists()
+      ? temperatureDoc.data()
+      : legacyInfoDoc.exists()
+        ? legacyInfoDoc.data()
+        : undefined;
+    const history = normalizeHistory(temperatureData?.temperatureHistory);
 
     if (req.method === "GET") {
-      const period =
+      const rawPeriod =
         typeof req.query.period === "string" ? req.query.period : "day";
+      const period = VALID_PERIODS.includes(rawPeriod as ReportPeriod)
+        ? (rawPeriod as ReportPeriod)
+        : "day";
       const now = Date.now();
-      const from = period === "day" ? now - DAY_MS : now - DAY_MS;
+      const from = now - getPeriodWindow(period);
       const filteredHistory = history.filter((entry) => entry.createdAt >= from);
       const chartPoints = downsampleHistory(filteredHistory);
       const temperatures = filteredHistory.map((entry) => entry.temperature);
 
       return res.status(200).json({
         success: true,
-        latest: infoData
+        latest: temperatureData
           ? {
-              id: infoDoc.id,
-              temperature: infoData.temperature ?? null,
-              unit: infoData.temperatureUnit ?? null,
-              sensorId: infoData.temperatureSensorId ?? null,
-              createdAt: infoData.temperatureUpdatedAt ?? null
+              id: temperatureDoc.exists() ? temperatureDoc.id : legacyInfoDoc.id,
+              temperature: temperatureData.temperature ?? null,
+              unit: temperatureData.temperatureUnit ?? null,
+              sensorId: temperatureData.temperatureSensorId ?? null,
+              createdAt: temperatureData.temperatureUpdatedAt ?? null
             }
           : null,
         report: {
@@ -291,24 +324,18 @@ export default async function handler(
       temperatureHistory: nextHistory
     };
 
-    let infoId: string;
-
-    if (infoDoc) {
-      await updateDoc(infoDoc.ref, nextData);
-      infoId = infoDoc.id;
-    } else {
-      const createdDoc = await addDoc(collection(db, INFO_COLLECTION), {
-        pass: "",
-        qrcode: "",
-        totalPaid: 0,
+    await setDoc(
+      temperatureRef,
+      {
+        ...(temperatureDoc.exists() ? temperatureDoc.data() : {}),
         ...nextData
-      });
-      infoId = createdDoc.id;
-    }
+      },
+      { merge: true }
+    );
 
     return res.status(200).json({
       success: true,
-      id: infoId,
+      id: TEMPERATURE_DOC_ID,
       temperature: payload.temperature,
       unit,
       sensorId: payload.sensorId,

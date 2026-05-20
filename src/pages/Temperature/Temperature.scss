@@ -236,6 +236,43 @@
   color: #f8fbff;
 }
 
+.temperature-period-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.temperature-period-button {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid rgba(151, 201, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(238, 246, 255, 0.86);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.temperature-period-button:hover,
+.temperature-period-button:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(151, 201, 255, 0.36);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.temperature-period-button-active {
+  border-color: rgba(143, 223, 255, 0.52);
+  background: rgba(143, 223, 255, 0.16);
+  color: #ffffff;
+}
+
 .temperature-chart-wrap {
   overflow: hidden;
 }
@@ -373,6 +410,16 @@
   .temperature-chart-card {
     padding: 18px;
     border-radius: 22px;
+  }
+
+  .temperature-period-switcher {
+    gap: 8px;
+  }
+
+  .temperature-period-button {
+    min-height: 38px;
+    padding: 0 14px;
+    font-size: 13px;
   }
 
   .temperature-chart {

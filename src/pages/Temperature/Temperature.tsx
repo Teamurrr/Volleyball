@@ -30,6 +30,15 @@ type TemperatureResponse = {
   error?: string;
 };
 
+const PERIOD_OPTIONS = [
+  { value: "day", label: "День", heading: "За последние 24 часа" },
+  { value: "week", label: "Неделя", heading: "За последние 7 дней" },
+  { value: "month", label: "Месяц", heading: "За последние 30 дней" },
+  { value: "halfYear", label: "Полгода", heading: "За последние 6 месяцев" }
+] as const;
+
+type ReportPeriod = (typeof PERIOD_OPTIONS)[number]["value"];
+
 const REFRESH_INTERVAL_MS = 5000;
 const CHART_WIDTH = 960;
 const CHART_HEIGHT = 280;
@@ -117,13 +126,15 @@ const buildChartPath = (
 const Temperature = () => {
   const [data, setData] = useState<TemperatureResponse["latest"]>(null);
   const [report, setReport] = useState<TemperatureResponse["report"]>();
+  const [selectedPeriod, setSelectedPeriod] = useState<ReportPeriod>("day");
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
   const isAlertLoopRunningRef = useRef(false);
+  const selectedPeriodRef = useRef<ReportPeriod>("day");
 
-  const fetchTemperature = async () => {
-    const response = await fetch("/api/temperature?period=day", {
+  const fetchTemperature = async (period: ReportPeriod) => {
+    const response = await fetch(`/api/temperature?period=${period}`, {
       method: "GET",
       headers: {
         Accept: "application/json"
@@ -139,7 +150,7 @@ const Temperature = () => {
     return result;
   };
 
-  const loadTemperature = async (showLoader = false) => {
+  const loadTemperature = async (showLoader = false, period = selectedPeriodRef.current) => {
     if (showLoader) {
       setIsLoading(true);
     } else {
@@ -147,7 +158,7 @@ const Temperature = () => {
     }
 
     try {
-      const result = await fetchTemperature();
+      const result = await fetchTemperature(period);
       setData(result.latest);
       setReport(result.report);
       setError("");
@@ -164,16 +175,25 @@ const Temperature = () => {
   };
 
   useEffect(() => {
-    void loadTemperature(true);
+    selectedPeriodRef.current = selectedPeriod;
+    void loadTemperature(true, selectedPeriod);
+
+    return undefined;
+  }, [selectedPeriod]);
+
+  useEffect(() => {
+    if (selectedPeriodRef.current !== selectedPeriod) {
+      selectedPeriodRef.current = selectedPeriod;
+    }
 
     const intervalId = window.setInterval(() => {
-      void loadTemperature(false);
+      void loadTemperature(false, selectedPeriodRef.current);
     }, REFRESH_INTERVAL_MS);
 
     return () => {
       window.clearInterval(intervalId);
     };
-  }, []);
+  }, [selectedPeriod]);
 
   useEffect(() => {
     if (isLoading || error || isAlertLoopRunningRef.current) {
@@ -195,7 +215,7 @@ const Temperature = () => {
         window.alert(`${nextAlert.title}. ${nextAlert.message}`);
 
         try {
-          const result = await fetchTemperature();
+          const result = await fetchTemperature(selectedPeriodRef.current);
           setData(result.latest);
           setReport(result.report);
           setError("");
@@ -237,6 +257,10 @@ const Temperature = () => {
       maxValue: paddedMax
     };
   }, [data?.temperature, report]);
+
+  const selectedPeriodOption =
+    PERIOD_OPTIONS.find((option) => option.value === selectedPeriod) ??
+    PERIOD_OPTIONS[0];
 
   return (
     <main className="temperature-page">
@@ -294,7 +318,7 @@ const Temperature = () => {
         <section className="temperature-summary-grid">
           <article className="temperature-summary-card">
             <span>Интервал</span>
-            <strong>День</strong>
+            <strong>{selectedPeriodOption.label}</strong>
           </article>
           <article className="temperature-summary-card">
             <span>Минимум</span>
@@ -314,8 +338,25 @@ const Temperature = () => {
           <div className="temperature-chart-header">
             <div>
               <p className="temperature-chart-kicker">График температуры</p>
-              <h2>За последние 24 часа</h2>
+              <h2>{selectedPeriodOption.heading}</h2>
             </div>
+          </div>
+
+          <div className="temperature-period-switcher" role="tablist" aria-label="Период графика">
+            {PERIOD_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={
+                  option.value === selectedPeriod
+                    ? "temperature-period-button temperature-period-button-active"
+                    : "temperature-period-button"
+                }
+                onClick={() => setSelectedPeriod(option.value)}
+              >
+                {option.label}
+              </button>
+            ))}
           </div>
 
           {chart ? (

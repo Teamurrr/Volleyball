@@ -4,9 +4,11 @@ import { Link } from "react-router-dom";
 
 import { db } from "../../app/firebase";
 import {
-  collection,
   addDoc,
+  collection,
+  getDoc,
   getDocs,
+  setDoc,
   updateDoc,
   doc
 } from "firebase/firestore";
@@ -30,13 +32,6 @@ type Place = {
   isMain?: boolean;
 };
 
-type Info = {
-  id: string;
-  pass: string;
-  qrcode: string;
-  totalPaid?: number;
-};
-
 type PlayerDraft = Omit<Player, "id" | "elo"> & {
   elo: number | "";
 };
@@ -44,6 +39,7 @@ type PlayerDraft = Omit<Player, "id" | "elo"> & {
 const DEFAULT_START_TIME = "08:00";
 const DEFAULT_END_TIME = "22:00";
 const DEFAULT_PLAYER_elo = 0;
+const INFO_DOC_ID = "info";
 
 const parseTimeRange = (value?: string) => {
   if (!value) {
@@ -139,25 +135,23 @@ const Admin = () => {
 
   const fetchInfo = async () => {
     try {
-      const snap = await getDocs(collection(db, "info"));
+      const infoRef = doc(db, "info", INFO_DOC_ID);
+      const infoDoc = await getDoc(infoRef);
 
-      const data: Info[] = snap.docs.map((item) => {
-        const value = item.data();
+      if (!infoDoc.exists()) {
+        setInfoId("");
+        setPassLink("");
+        setQrCodeLink("");
+        setTotalPaid("");
+        return;
+      }
 
-        return {
-          id: item.id,
-          pass: value.pass || "",
-          qrcode: value.qrcode || "",
-          totalPaid: value.totalPaid
-        };
-      });
+      const value = infoDoc.data();
 
-      const info = data[0];
-
-      setInfoId(info?.id || "");
-      setPassLink(info?.pass || "");
-      setQrCodeLink(info?.qrcode || "");
-      setTotalPaid(info?.totalPaid != null ? String(info.totalPaid) : "");
+      setInfoId(infoDoc.id);
+      setPassLink(value.pass || "");
+      setQrCodeLink(value.qrcode || "");
+      setTotalPaid(value.totalPaid != null ? String(value.totalPaid) : "");
     } catch {
       setInfoId("");
       setPassLink("");
@@ -303,8 +297,8 @@ const Admin = () => {
     if (infoId) {
       await updateDoc(doc(db, "info", infoId), payload);
     } else {
-      const created = await addDoc(collection(db, "info"), payload);
-      setInfoId(created.id);
+      await setDoc(doc(db, "info", INFO_DOC_ID), payload, { merge: true });
+      setInfoId(INFO_DOC_ID);
     }
   };
 

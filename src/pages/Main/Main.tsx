@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import "./main.scss";
 
@@ -26,6 +26,8 @@ type Info = {
   qrcode: string;
   totalPaid?: number;
 };
+
+const INFO_DOC_ID = "info";
 
 const getAttendancePriority = (value: AttendanceStatus) => {
   if (value === "yes") return 0;
@@ -104,10 +106,9 @@ const Main = () => {
   useEffect(() => {
     const fetchInfo = async () => {
       try {
-        const querySnapshot = await getDocs(collection(db, "info"));
-        const firstDoc = querySnapshot.docs[0];
+        const infoDoc = await getDoc(doc(db, "info", INFO_DOC_ID));
 
-        if (!firstDoc) {
+        if (!infoDoc.exists()) {
           setInfo({
             pass: "",
             qrcode: "",
@@ -116,7 +117,7 @@ const Main = () => {
           return;
         }
 
-        const data = firstDoc.data();
+        const data = infoDoc.data();
 
         setInfo({
           pass: data.pass || "",
