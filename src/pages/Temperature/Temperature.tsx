@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import "./Temperature.scss";
 
@@ -60,11 +60,7 @@ const getTemperatureAlert = (value: number | null) => {
     } as const;
   }
 
-  return {
-    tone: "normal",
-    title: "Температура в норме",
-    message: "Сейчас условия для клиентов комфортные."
-  } as const;
+  return null;
 };
 
 const Temperature = () => {
@@ -74,6 +70,7 @@ const Temperature = () => {
   const [error, setError] = useState("");
   const currentTemperature = data?.temperature ?? null;
   const temperatureAlert = getTemperatureAlert(currentTemperature);
+  const lastAlertToneRef = useRef<string | null>(null);
 
   const loadTemperature = async (showLoader = false) => {
     if (showLoader) {
@@ -121,6 +118,24 @@ const Temperature = () => {
       window.clearInterval(intervalId);
     };
   }, []);
+
+  useEffect(() => {
+    if (isLoading || error) {
+      return;
+    }
+
+    if (!temperatureAlert) {
+      lastAlertToneRef.current = null;
+      return;
+    }
+
+    if (lastAlertToneRef.current === temperatureAlert.tone) {
+      return;
+    }
+
+    window.alert(`${temperatureAlert.title}. ${temperatureAlert.message}`);
+    lastAlertToneRef.current = temperatureAlert.tone;
+  }, [temperatureAlert, isLoading, error]);
 
   return (
     <main className="temperature-page">
@@ -191,15 +206,6 @@ const Temperature = () => {
           )}
         </section>
 
-        {!isLoading && !error && temperatureAlert && (
-          <section
-            className={`temperature-alert-card temperature-alert-card-${temperatureAlert.tone}`}
-          >
-            <p className="temperature-alert-label">Alert</p>
-            <h2>{temperatureAlert.title}</h2>
-            <p className="temperature-alert-message">{temperatureAlert.message}</p>
-          </section>
-        )}
       </div>
     </main>
   );
