@@ -190,6 +190,61 @@
   color: #ffb9b9;
 }
 
+.temperature-alert-card {
+  margin-top: 20px;
+  padding: 22px 24px;
+  border-radius: 24px;
+  border: 1px solid transparent;
+}
+
+.temperature-alert-label {
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.temperature-alert-card h2 {
+  margin: 0 0 10px;
+  color: inherit;
+}
+
+.temperature-alert-message {
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.temperature-alert-card-hot {
+  background: linear-gradient(135deg, rgba(255, 115, 87, 0.22), rgba(255, 166, 0, 0.14));
+  border-color: rgba(255, 136, 102, 0.35);
+  color: #ffe8dd;
+}
+
+.temperature-alert-card-hot .temperature-alert-label {
+  color: #ffb59e;
+}
+
+.temperature-alert-card-cold {
+  background: linear-gradient(135deg, rgba(73, 163, 255, 0.22), rgba(90, 230, 255, 0.12));
+  border-color: rgba(123, 196, 255, 0.34);
+  color: #e4f4ff;
+}
+
+.temperature-alert-card-cold .temperature-alert-label {
+  color: #9fd8ff;
+}
+
+.temperature-alert-card-normal {
+  background: linear-gradient(135deg, rgba(65, 202, 138, 0.18), rgba(124, 232, 169, 0.1));
+  border-color: rgba(102, 220, 151, 0.28);
+  color: #eafff2;
+}
+
+.temperature-alert-card-normal .temperature-alert-label {
+  color: #8ff0ba;
+}
+
 @media (max-width: 768px) {
   .temperature-page {
     padding: 24px 16px 32px;
@@ -257,7 +312,16 @@
     border-radius: 18px;
   }
 
+  .temperature-alert-card {
+    padding: 18px;
+    border-radius: 18px;
+  }
+
   .temperature-status-text {
+    font-size: 15px;
+  }
+
+  .temperature-alert-message {
     font-size: 15px;
   }
 }

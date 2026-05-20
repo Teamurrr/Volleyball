@@ -39,11 +39,41 @@ const formatTemperature = (value: number | null) => {
   return value.toFixed(2);
 };
 
+const getTemperatureAlert = (value: number | null) => {
+  if (value === null || Number.isNaN(value)) {
+    return null;
+  }
+
+  if (value > 40) {
+    return {
+      tone: "hot",
+      title: "Слишком жарко",
+      message: "Клиентам жарко."
+    } as const;
+  }
+
+  if (value < 22) {
+    return {
+      tone: "cold",
+      title: "Слишком холодно",
+      message: "Клиенты заболеют."
+    } as const;
+  }
+
+  return {
+    tone: "normal",
+    title: "Температура в норме",
+    message: "Сейчас условия для клиентов комфортные."
+  } as const;
+};
+
 const Temperature = () => {
   const [data, setData] = useState<TemperatureResponse["latest"]>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const currentTemperature = data?.temperature ?? null;
+  const temperatureAlert = getTemperatureAlert(currentTemperature);
 
   const loadTemperature = async (showLoader = false) => {
     if (showLoader) {
@@ -160,6 +190,16 @@ const Temperature = () => {
             </p>
           )}
         </section>
+
+        {!isLoading && !error && temperatureAlert && (
+          <section
+            className={`temperature-alert-card temperature-alert-card-${temperatureAlert.tone}`}
+          >
+            <p className="temperature-alert-label">Alert</p>
+            <h2>{temperatureAlert.title}</h2>
+            <p className="temperature-alert-message">{temperatureAlert.message}</p>
+          </section>
+        )}
       </div>
     </main>
   );
