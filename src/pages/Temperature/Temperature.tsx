@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import "./Temperature.scss";
 
 type TemperaturePoint = {
-  temperature: number;
+  temperature: number | null;
   createdAt: number;
   unit: string;
   sensorId: string | null;
@@ -66,6 +66,12 @@ const formatShortTime = (value: number) =>
     minute: "2-digit"
   });
 
+const formatShortDate = (value: number) =>
+  new Date(value).toLocaleDateString("ru-RU", {
+    day: "2-digit",
+    month: "2-digit"
+  });
+
 const formatTemperature = (value: number | null) => {
   if (value === null || Number.isNaN(value)) {
     return "--";
@@ -112,14 +118,23 @@ const buildChartPath = (
 
   return points
     .map((point, index) => {
+      if (point.temperature === null) {
+        return "";
+      }
+
       const x = CHART_PADDING_X + stepX * index;
       const y =
         CHART_HEIGHT -
         CHART_PADDING_Y -
         ((point.temperature - minValue) / safeRange) * drawableHeight;
 
-      return `${index === 0 ? "M" : "L"} ${x} ${y}`;
+      const previousPoint = points[index - 1];
+      const command =
+        index === 0 || previousPoint?.temperature === null ? "M" : "L";
+
+      return `${command} ${x} ${y}`;
     })
+    .filter(Boolean)
     .join(" ");
 };
 
@@ -242,7 +257,11 @@ const Temperature = () => {
     const maxValue =
       report?.max ?? (latestTemperature !== null ? latestTemperature : null);
 
-    if (points.length === 0 || minValue === null || maxValue === null) {
+    const visiblePoints = points.filter(
+      (point) => point.temperature !== null
+    );
+
+    if (visiblePoints.length === 0 || minValue === null || maxValue === null) {
       return null;
     }
 
@@ -330,7 +349,7 @@ const Temperature = () => {
           </article>
           <article className="temperature-summary-card">
             <span>Точек</span>
-            <strong>{report?.count ?? 0}</strong>
+            <strong>{report?.points.length ?? 0}</strong>
           </article>
         </section>
 
@@ -388,6 +407,10 @@ const Temperature = () => {
                 <path d={chart.path} className="temperature-chart-line" />
 
                 {chart.points.map((point, index) => {
+                  if (point.temperature === null) {
+                    return null;
+                  }
+
                   const drawableWidth = CHART_WIDTH - CHART_PADDING_X * 2;
                   const drawableHeight = CHART_HEIGHT - CHART_PADDING_Y * 2;
                   const safeRange = Math.max(chart.maxValue - chart.minValue, 1);
@@ -411,7 +434,7 @@ const Temperature = () => {
                       className="temperature-chart-point"
                     >
                       <title>
-                        {`${formatShortTime(point.createdAt)} - ${point.temperature.toFixed(2)} ${point.unit}`}
+                        {`${selectedPeriod === "day" ? formatShortTime(point.createdAt) : formatShortDate(point.createdAt)} - ${point.temperature.toFixed(2)} ${point.unit}`}
                       </title>
                     </circle>
                   );
@@ -419,8 +442,20 @@ const Temperature = () => {
               </svg>
 
               <div className="temperature-chart-footer">
-                <span>{report ? formatShortTime(report.from) : "--:--"}</span>
-                <span>{report ? formatShortTime(report.to) : "--:--"}</span>
+                <span>
+                  {report
+                    ? selectedPeriod === "day"
+                      ? formatShortTime(report.from)
+                      : formatShortDate(report.from)
+                    : "--"}
+                </span>
+                <span>
+                  {report
+                    ? selectedPeriod === "day"
+                      ? formatShortTime(report.to)
+                      : formatShortDate(report.to)
+                    : "--"}
+                </span>
               </div>
             </div>
           ) : (

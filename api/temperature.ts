@@ -47,6 +47,13 @@ type TemperatureHistoryEntry = {
   sensorId: string | null;
 };
 
+type ReportPoint = {
+  temperature: number | null;
+  createdAt: number;
+  unit: string;
+  sensorId: string | null;
+};
+
 const sendCorsHeaders = (res: VercelResponse) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -228,6 +235,84 @@ const getPeriodWindow = (period: ReportPeriod) => {
   }
 };
 
+const getPeriodPointCount = (period: ReportPeriod) => {
+  switch (period) {
+    case "week":
+      return 7;
+    case "month":
+      return 30;
+    case "halfYear":
+      return 183;
+    case "day":
+    default:
+      return null;
+  }
+};
+
+const getDayStart = (timestamp: number) => {
+  const date = new Date(timestamp);
+  date.setHours(0, 0, 0, 0);
+  return date.getTime();
+};
+
+const buildReportPoints = (
+  history: TemperatureHistoryEntry[],
+  period: ReportPeriod,
+  now: number
+): ReportPoint[] => {
+  if (period === "day") {
+    return downsampleHistory(history).map((entry) => ({
+      temperature: entry.temperature,
+      createdAt: entry.createdAt,
+      unit: entry.unit,
+      sensorId: entry.sensorId
+    }));
+  }
+
+  const pointCount = getPeriodPointCount(period);
+
+  if (!pointCount) {
+    return [];
+  }
+
+  const dayBuckets = new Map<number, TemperatureHistoryEntry[]>();
+
+  history.forEach((entry) => {
+    const dayStart = getDayStart(entry.createdAt);
+    const bucket = dayBuckets.get(dayStart) ?? [];
+    bucket.push(entry);
+    dayBuckets.set(dayStart, bucket);
+  });
+
+  const todayStart = getDayStart(now);
+
+  return Array.from({ length: pointCount }, (_, index) => {
+    const offset = pointCount - index - 1;
+    const dayStart = todayStart - offset * DAY_MS;
+    const bucket = dayBuckets.get(dayStart) ?? [];
+
+    if (bucket.length === 0) {
+      return {
+        temperature: null,
+        createdAt: dayStart,
+        unit: "C",
+        sensorId: null
+      };
+    }
+
+    const average =
+      bucket.reduce((sum, entry) => sum + entry.temperature, 0) / bucket.length;
+    const latestEntry = bucket[bucket.length - 1]!;
+
+    return {
+      temperature: Number(average.toFixed(2)),
+      createdAt: dayStart,
+      unit: latestEntry.unit,
+      sensorId: latestEntry.sensorId
+    };
+  });
+};
+
 export default async function handler(
   req: VercelRequest,
   res: VercelResponse
@@ -262,7 +347,7 @@ export default async function handler(
       const now = Date.now();
       const from = now - getPeriodWindow(period);
       const filteredHistory = history.filter((entry) => entry.createdAt >= from);
-      const chartPoints = downsampleHistory(filteredHistory);
+      const chartPoints = buildReportPoints(filteredHistory, period, now);
       const temperatures = filteredHistory.map((entry) => entry.temperature);
 
       return res.status(200).json({
