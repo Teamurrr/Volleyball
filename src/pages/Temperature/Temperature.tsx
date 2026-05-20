@@ -140,7 +140,7 @@ const Temperature = () => {
             </article>
             <article className="temperature-meta-card">
               <span>Режим</span>
-              <strong>{isRefreshing ? "Идет обновление" : "Автообновление каждые 15 сек"}</strong>
+              <strong>{isRefreshing ? "Идет обновление" : "Автообновление каждые 5 сек"}</strong>
             </article>
           </div>
         </section>
