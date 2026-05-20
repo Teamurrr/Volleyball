@@ -47,7 +47,7 @@ const PERIOD_OPTIONS = [
 type ReportPeriod = (typeof PERIOD_OPTIONS)[number]["value"];
 
 const REFRESH_INTERVAL_MS = 5000;
-const CHART_WIDTH = 960;
+const CHART_WIDTH = 1000;
 const CHART_HEIGHT = 280;
 const CHART_PADDING_X = 56;
 const CHART_PADDING_Y = 20;
