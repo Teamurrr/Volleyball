@@ -485,3 +485,72 @@
     font-size: 15px;
   }
 }
+
+.temperature-page {
+  width: 100%;
+  min-height: 100vh;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.temperature-shell {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.temperature-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.temperature-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.temperature-hero-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.temperature-meta-grid,
+.temperature-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.temperature-chart-card {
+  width: 100%;
+  overflow: hidden;
+}
+
+.temperature-chart-wrap {
+  width: 100%;
+  overflow-x: auto;
+  position: relative;
+}
+
+.temperature-chart {
+  width: 100%;
+  min-width: 700px;
+  height: 320px;
+  display: block;
+}
+
+.temperature-period-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.temperature-period-button {
+  flex: 1 1 140px;
+}
