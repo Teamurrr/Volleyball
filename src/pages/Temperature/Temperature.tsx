@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { get, onValue, orderByKey, query, ref, startAt } from "firebase/database";
+import { database } from "../../app/firebase";
 import "./Temperature.scss";
 
 type TemperaturePoint = {
@@ -9,25 +11,28 @@ type TemperaturePoint = {
   sensorId: string | null;
 };
 
-type TemperatureResponse = {
-  success: boolean;
-  latest: {
-    id: string;
-    temperature: number | null;
-    unit: string | null;
-    sensorId: string | null;
-    createdAt: number | null;
-  } | null;
-  report?: {
-    period: string;
-    from: number;
-    to: number;
-    points: TemperaturePoint[];
-    count: number;
-    min: number | null;
-    max: number | null;
-  };
-  error?: string;
+type LatestTemperature = {
+  id: string;
+  temperature: number | null;
+  unit: string | null;
+  sensorId: string | null;
+  createdAt: number | null;
+} | null;
+
+type ReportData = {
+  period: ReportPeriod;
+  from: number;
+  to: number;
+  points: TemperaturePoint[];
+  count: number;
+  min: number | null;
+  max: number | null;
+};
+
+type FirebaseTemperatureNode = {
+  device?: string;
+  temperature?: number | null;
+  updated_at?: string;
 };
 
 type ChartTooltip = {
@@ -46,11 +51,13 @@ const PERIOD_OPTIONS = [
 
 type ReportPeriod = (typeof PERIOD_OPTIONS)[number]["value"];
 
-const REFRESH_INTERVAL_MS = 5000;
 const CHART_WIDTH = 1000;
 const CHART_HEIGHT = 280;
 const CHART_PADDING_X = 56;
 const CHART_PADDING_Y = 20;
+const SENSOR_ID = "esp32";
+const SENSOR_PATH = `sensors/${SENSOR_ID}`;
+const HISTORY_PATH = `history/${SENSOR_ID}`;
 
 const formatUpdatedAt = (value: number | null) => {
   if (!value) {
@@ -109,6 +116,65 @@ const getTemperatureAlert = (value: number | null) => {
   return null;
 };
 
+const getPeriodStart = (period: ReportPeriod) => {
+  const now = new Date();
+
+  switch (period) {
+    case "day":
+      now.setHours(now.getHours() - 24);
+      break;
+    case "week":
+      now.setDate(now.getDate() - 7);
+      break;
+    case "month":
+      now.setDate(now.getDate() - 30);
+      break;
+    case "halfYear":
+      now.setMonth(now.getMonth() - 6);
+      break;
+  }
+
+  return now;
+};
+
+const parseIsoDate = (value?: string | null) => {
+  if (!value) {
+    return null;
+  }
+
+  const timestamp = new Date(value).getTime();
+  return Number.isNaN(timestamp) ? null : timestamp;
+};
+
+const mapLatestData = (raw: FirebaseTemperatureNode | null): LatestTemperature => {
+  if (!raw) {
+    return null;
+  }
+
+  return {
+    id: SENSOR_ID,
+    temperature: typeof raw.temperature === "number" ? raw.temperature : null,
+    unit: "C",
+    sensorId: raw.device || SENSOR_ID.toUpperCase(),
+    createdAt: parseIsoDate(raw.updated_at)
+  };
+};
+
+const mapHistoryPoint = (key: string, raw: FirebaseTemperatureNode): TemperaturePoint | null => {
+  const createdAt = parseIsoDate(raw.updated_at || key);
+
+  if (!createdAt) {
+    return null;
+  }
+
+  return {
+    temperature: typeof raw.temperature === "number" ? raw.temperature : null,
+    createdAt,
+    unit: "C",
+    sensorId: raw.device || SENSOR_ID.toUpperCase()
+  };
+};
+
 const buildChartPath = (
   points: TemperaturePoint[],
   minValue: number,
@@ -146,37 +212,16 @@ const buildChartPath = (
 };
 
 const Temperature = () => {
-  const [data, setData] = useState<TemperatureResponse["latest"]>(null);
-  const [report, setReport] = useState<TemperatureResponse["report"]>();
+  const [data, setData] = useState<LatestTemperature>(null);
+  const [report, setReport] = useState<ReportData>();
   const [selectedPeriod, setSelectedPeriod] = useState<ReportPeriod>("day");
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [tooltip, setTooltip] = useState<ChartTooltip | null>(null);
   const isAlertLoopRunningRef = useRef(false);
-  const selectedPeriodRef = useRef<ReportPeriod>("day");
 
-  const fetchTemperature = async (period: ReportPeriod) => {
-    const response = await fetch(`/api/temperature?period=${period}`, {
-      method: "GET",
-      headers: {
-        Accept: "application/json"
-      }
-    });
-
-    const result = (await response.json()) as TemperatureResponse;
-
-    if (!response.ok || !result.success) {
-      throw new Error(result.error || "Не удалось получить температуру");
-    }
-
-    return result;
-  };
-
-  const loadTemperature = async (
-    showLoader = false,
-    period = selectedPeriodRef.current
-  ) => {
+  const loadHistory = async (period: ReportPeriod, showLoader = false) => {
     if (showLoader) {
       setIsLoading(true);
     } else {
@@ -184,16 +229,38 @@ const Temperature = () => {
     }
 
     try {
-      const result = await fetchTemperature(period);
-      setData(result.latest);
-      setReport(result.report);
+      const fromDate = getPeriodStart(period);
+      const fromIso = fromDate.toISOString();
+      const to = Date.now();
+
+      const historyQuery = query(ref(database, HISTORY_PATH), orderByKey(), startAt(fromIso));
+      const snapshot = await get(historyQuery);
+      const raw = snapshot.val() as Record<string, FirebaseTemperatureNode> | null;
+
+      const points = raw
+        ? Object.entries(raw)
+            .map(([key, value]) => mapHistoryPoint(key, value))
+            .filter((point): point is TemperaturePoint => point !== null)
+            .sort((a, b) => a.createdAt - b.createdAt)
+        : [];
+
+      const values = points
+        .map((point) => point.temperature)
+        .filter((value): value is number => value !== null);
+
+      setReport({
+        period,
+        from: fromDate.getTime(),
+        to,
+        points,
+        count: points.length,
+        min: values.length ? Math.min(...values) : null,
+        max: values.length ? Math.max(...values) : null
+      });
+
       setError("");
-    } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Не удалось получить температуру"
-      );
+    } catch {
+      setError("Не удалось получить историю температуры");
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -201,23 +268,27 @@ const Temperature = () => {
   };
 
   useEffect(() => {
-    selectedPeriodRef.current = selectedPeriod;
-    void loadTemperature(true, selectedPeriod);
-    return undefined;
-  }, [selectedPeriod]);
+    const sensorRef = ref(database, SENSOR_PATH);
+
+    const unsubscribe = onValue(
+      sensorRef,
+      (snapshot) => {
+        const raw = snapshot.val() as FirebaseTemperatureNode | null;
+        setData(mapLatestData(raw));
+        setError("");
+        setIsLoading(false);
+      },
+      () => {
+        setError("Не удалось получить текущее значение температуры");
+        setIsLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
-    if (selectedPeriodRef.current !== selectedPeriod) {
-      selectedPeriodRef.current = selectedPeriod;
-    }
-
-    const intervalId = window.setInterval(() => {
-      void loadTemperature(false, selectedPeriodRef.current);
-    }, REFRESH_INTERVAL_MS);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
+    void loadHistory(selectedPeriod, true);
   }, [selectedPeriod]);
 
   useEffect(() => {
@@ -238,20 +309,9 @@ const Temperature = () => {
 
       while (nextAlert) {
         window.alert(`${nextAlert.title}. ${nextAlert.message}`);
-
-        try {
-          const result = await fetchTemperature(selectedPeriodRef.current);
-          setData(result.latest);
-          setReport(result.report);
-          setError("");
-          nextAlert = getTemperatureAlert(result.latest?.temperature ?? null);
-        } catch (requestError) {
-          setError(
-            requestError instanceof Error
-              ? requestError.message
-              : "Не удалось получить температуру"
-          );
-          nextAlert = null;
+        nextAlert = getTemperatureAlert(data?.temperature ?? null);
+        if (nextAlert) {
+          break;
         }
       }
 
@@ -294,12 +354,12 @@ const Temperature = () => {
       return [];
     }
 
-    const labelCount: number = selectedPeriod === "day" ? 4 : 5;
+    const labelCount = selectedPeriod === "day" ? 4 : 5;
     const lastIndex = chart.points.length - 1;
     const drawableWidth = CHART_WIDTH - CHART_PADDING_X * 2;
 
     return Array.from({ length: labelCount }, (_, index) => {
-      const ratio = labelCount === 1 ? 0 : index / (labelCount - 1);
+      const ratio = index / (labelCount - 1);
       const pointIndex = Math.round(lastIndex * ratio);
       const point = chart.points[pointIndex]!;
 
@@ -324,8 +384,8 @@ const Temperature = () => {
             <p className="temperature-kicker">Датчик ESP32</p>
             <h1>Температура зала</h1>
             <p className="temperature-subtitle">
-              Страница автоматически обновляет последнее значение, строит график температуры за
-              день и показывает минимальные и максимальные значения за выбранный интервал.
+              Страница читает текущее значение из Firebase, строит график по `history/esp32`
+              и показывает минимальные и максимальные значения за выбранный интервал.
             </p>
           </div>
 
@@ -333,7 +393,7 @@ const Temperature = () => {
             <button
               type="button"
               className="temperature-refresh-button"
-              onClick={() => void loadTemperature(false)}
+              onClick={() => void loadHistory(selectedPeriod, false)}
               disabled={isRefreshing}
             >
               {isRefreshing ? "Обновляем..." : "Обновить"}
@@ -364,7 +424,7 @@ const Temperature = () => {
             </article>
             <article className="temperature-meta-card">
               <span>Режим</span>
-              <strong>{isRefreshing ? "Идет обновление" : "Автообновление каждые 5 сек"}</strong>
+              <strong>{isRefreshing ? "Идет обновление" : "Live из Firebase"}</strong>
             </article>
           </div>
         </section>
@@ -426,9 +486,7 @@ const Temperature = () => {
                 preserveAspectRatio="none"
               >
                 {[0, 0.5, 1].map((ratio) => {
-                  const y =
-                    CHART_PADDING_Y +
-                    (CHART_HEIGHT - CHART_PADDING_Y * 2) * ratio;
+                  const y = CHART_PADDING_Y + (CHART_HEIGHT - CHART_PADDING_Y * 2) * ratio;
 
                   return (
                     <line
@@ -445,9 +503,7 @@ const Temperature = () => {
                 {[chart.maxValue, (chart.maxValue + chart.minValue) / 2, chart.minValue].map(
                   (value, index) => {
                     const ratio = index / 2;
-                    const y =
-                      CHART_PADDING_Y +
-                      (CHART_HEIGHT - CHART_PADDING_Y * 2) * ratio;
+                    const y = CHART_PADDING_Y + (CHART_HEIGHT - CHART_PADDING_Y * 2) * ratio;
 
                     return (
                       <text
@@ -476,13 +532,11 @@ const Temperature = () => {
                   const x =
                     chart.points.length === 1
                       ? CHART_WIDTH / 2
-                      : CHART_PADDING_X +
-                        (drawableWidth / (chart.points.length - 1)) * index;
+                      : CHART_PADDING_X + (drawableWidth / (chart.points.length - 1)) * index;
                   const y =
                     CHART_HEIGHT -
                     CHART_PADDING_Y -
-                    ((point.temperature - chart.minValue) / safeRange) *
-                      drawableHeight;
+                    ((point.temperature - chart.minValue) / safeRange) * drawableHeight;
 
                   const label =
                     selectedPeriod === "day"
@@ -518,10 +572,10 @@ const Temperature = () => {
 
                 {tooltip && (
                   <g
-                    transform={`translate(${Math.min(
-                      tooltip.x + 12,
-                      CHART_WIDTH - 140
-                    )} ${Math.max(tooltip.y - 56, 16)})`}
+                    transform={`translate(${Math.min(tooltip.x + 12, CHART_WIDTH - 140)} ${Math.max(
+                      tooltip.y - 56,
+                      16
+                    )})`}
                   >
                     <rect
                       width="128"
@@ -561,14 +615,14 @@ const Temperature = () => {
             </div>
           ) : (
             <p className="temperature-chart-empty">
-              Пока недостаточно данных для построения графика за день.
+              Пока недостаточно данных для построения графика.
             </p>
           )}
         </section>
 
         <section className="temperature-status-card">
           {isLoading ? (
-            <p className="temperature-status-text">Загружаем данные с датчика...</p>
+            <p className="temperature-status-text">Загружаем данные с Firebase...</p>
           ) : error ? (
             <p className="temperature-status-text temperature-status-error">{error}</p>
           ) : data?.temperature === null || data?.temperature === undefined ? (
@@ -577,8 +631,7 @@ const Temperature = () => {
             </p>
           ) : (
             <p className="temperature-status-text">
-              Сервер отвечает нормально, и дневной отчёт по температуре уже строится на основе
-              сохранённой истории.
+              Firebase отвечает нормально, и график строится на основе `history/esp32`.
             </p>
           )}
         </section>
