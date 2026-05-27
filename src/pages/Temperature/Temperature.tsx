@@ -146,6 +146,8 @@ const parseIsoDate = (value?: string | null) => {
   return Number.isNaN(timestamp) ? null : timestamp;
 };
 
+const formatDatabaseKeyDate = (date: Date) => date.toISOString().replace(/\.\d{3}Z$/, "Z");
+
 const mapLatestData = (raw: FirebaseTemperatureNode | null): LatestTemperature => {
   if (!raw) {
     return null;
@@ -248,7 +250,7 @@ const Temperature = () => {
 
     try {
       const fromDate = getPeriodStart(period);
-      const fromIso = fromDate.toISOString();
+      const fromIso = formatDatabaseKeyDate(fromDate);
       const to = Date.now();
 
       const historyUrl = `${TEMPERATURE_DATABASE_URL}/${HISTORY_PATH}.json?orderBy=${encodeURIComponent(
