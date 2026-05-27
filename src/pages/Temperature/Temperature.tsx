@@ -49,6 +49,17 @@ const PERIOD_OPTIONS = [
 
 type ReportPeriod = (typeof PERIOD_OPTIONS)[number]["value"];
 
+const POINT_INTERVAL_OPTIONS = [
+  { value: 0, label: "Все точки" },
+  { value: 1, label: "1 мин" },
+  { value: 5, label: "5 мин" },
+  { value: 10, label: "10 мин" },
+  { value: 30, label: "30 мин" },
+  { value: 60, label: "1 час" }
+] as const;
+
+type PointIntervalMinutes = (typeof POINT_INTERVAL_OPTIONS)[number]["value"];
+
 const CHART_WIDTH = 1000;
 const CHART_HEIGHT = 280;
 const CHART_PADDING_X = 56;
@@ -177,6 +188,28 @@ const mapHistoryPoint = (key: string, raw: FirebaseTemperatureNode): Temperature
   };
 };
 
+const filterPointsByInterval = (
+  points: TemperaturePoint[],
+  intervalMinutes: PointIntervalMinutes
+) => {
+  if (intervalMinutes === 0) {
+    return points;
+  }
+
+  const intervalMs = intervalMinutes * 60 * 1000;
+  const filteredPoints: TemperaturePoint[] = [];
+  let lastPointTime: number | null = null;
+
+  for (const point of points) {
+    if (lastPointTime === null || point.createdAt - lastPointTime >= intervalMs) {
+      filteredPoints.push(point);
+      lastPointTime = point.createdAt;
+    }
+  }
+
+  return filteredPoints;
+};
+
 const buildChartPath = (
   points: TemperaturePoint[],
   minValue: number,
@@ -217,6 +250,8 @@ const Temperature = () => {
   const [data, setData] = useState<LatestTemperature>(null);
   const [report, setReport] = useState<ReportData>();
   const [selectedPeriod, setSelectedPeriod] = useState<ReportPeriod>("day");
+  const [selectedPointInterval, setSelectedPointInterval] =
+    useState<PointIntervalMinutes>(10);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
@@ -343,14 +378,23 @@ const Temperature = () => {
   }, [data, isLoading, error]);
 
   const chart = useMemo(() => {
-    const points = report?.points ?? [];
+    const rawPoints = report?.points ?? [];
+    const points = filterPointsByInterval(rawPoints, selectedPointInterval);
     const latestTemperature = data?.temperature ?? null;
-    const minValue =
-      report?.min ?? (latestTemperature !== null ? latestTemperature : null);
-    const maxValue =
-      report?.max ?? (latestTemperature !== null ? latestTemperature : null);
-
     const visiblePoints = points.filter((point) => point.temperature !== null);
+    const visibleValues = visiblePoints.map((point) => point.temperature as number);
+    const minValue =
+      visibleValues.length > 0
+        ? Math.min(...visibleValues)
+        : latestTemperature !== null
+          ? latestTemperature
+          : null;
+    const maxValue =
+      visibleValues.length > 0
+        ? Math.max(...visibleValues)
+        : latestTemperature !== null
+          ? latestTemperature
+          : null;
 
     if (visiblePoints.length === 0 || minValue === null || maxValue === null) {
       return null;
@@ -366,7 +410,7 @@ const Temperature = () => {
       minValue: paddedMin,
       maxValue: paddedMax
     };
-  }, [data?.temperature, report]);
+  }, [data?.temperature, report, selectedPointInterval]);
 
   const selectedPeriodOption =
     PERIOD_OPTIONS.find((option) => option.value === selectedPeriod) ??
@@ -467,7 +511,9 @@ const Temperature = () => {
           </article>
           <article className="temperature-summary-card">
             <span>Точек</span>
-            <strong>{report?.points.length ?? 0}</strong>
+            <strong>
+              {chart?.points.length ?? 0} / {report?.points.length ?? 0}
+            </strong>
           </article>
         </section>
 
@@ -494,6 +540,26 @@ const Temperature = () => {
                 {option.label}
               </button>
             ))}
+          </div>
+
+          <div className="temperature-point-controls">
+            <span>Частота точек</span>
+            <div className="temperature-period-switcher" role="tablist" aria-label="Частота точек графика">
+              {POINT_INTERVAL_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={
+                    option.value === selectedPointInterval
+                      ? "temperature-period-button temperature-period-button-active"
+                      : "temperature-period-button"
+                  }
+                  onClick={() => setSelectedPointInterval(option.value)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {chart ? (
