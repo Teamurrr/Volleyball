@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { get, onValue, orderByKey, query, ref, startAt } from "firebase/database";
-import { database } from "../../app/firebase";
 import "./Temperature.scss";
 
 type TemperaturePoint = {
@@ -58,6 +56,8 @@ const CHART_PADDING_Y = 20;
 const SENSOR_ID = "esp32";
 const SENSOR_PATH = `sensors/${SENSOR_ID}`;
 const HISTORY_PATH = `history/${SENSOR_ID}`;
+const TEMPERATURE_DATABASE_URL =
+  "https://temperaturedata-68177-default-rtdb.firebaseio.com";
 
 const formatUpdatedAt = (value: number | null) => {
   if (!value) {
@@ -221,6 +221,24 @@ const Temperature = () => {
   const [tooltip, setTooltip] = useState<ChartTooltip | null>(null);
   const isAlertLoopRunningRef = useRef(false);
 
+  const loadLatest = async () => {
+    try {
+      const response = await fetch(`${TEMPERATURE_DATABASE_URL}/${SENSOR_PATH}.json`);
+
+      if (!response.ok) {
+        throw new Error("Failed to load latest temperature");
+      }
+
+      const raw = (await response.json()) as FirebaseTemperatureNode | null;
+      setData(mapLatestData(raw));
+      setError("");
+      setIsLoading(false);
+    } catch {
+      setError("Не удалось получить текущее значение температуры");
+      setIsLoading(false);
+    }
+  };
+
   const loadHistory = async (period: ReportPeriod, showLoader = false) => {
     if (showLoader) {
       setIsLoading(true);
@@ -233,9 +251,16 @@ const Temperature = () => {
       const fromIso = fromDate.toISOString();
       const to = Date.now();
 
-      const historyQuery = query(ref(database, HISTORY_PATH), orderByKey(), startAt(fromIso));
-      const snapshot = await get(historyQuery);
-      const raw = snapshot.val() as Record<string, FirebaseTemperatureNode> | null;
+      const historyUrl = `${TEMPERATURE_DATABASE_URL}/${HISTORY_PATH}.json?orderBy=${encodeURIComponent(
+        '"$key"'
+      )}&startAt=${encodeURIComponent(JSON.stringify(fromIso))}`;
+      const response = await fetch(historyUrl);
+
+      if (!response.ok) {
+        throw new Error("Failed to load temperature history");
+      }
+
+      const raw = (await response.json()) as Record<string, FirebaseTemperatureNode> | null;
 
       const points = raw
         ? Object.entries(raw)
@@ -268,27 +293,23 @@ const Temperature = () => {
   };
 
   useEffect(() => {
-    const sensorRef = ref(database, SENSOR_PATH);
+    void loadLatest();
 
-    const unsubscribe = onValue(
-      sensorRef,
-      (snapshot) => {
-        const raw = snapshot.val() as FirebaseTemperatureNode | null;
-        setData(mapLatestData(raw));
-        setError("");
-        setIsLoading(false);
-      },
-      () => {
-        setError("Не удалось получить текущее значение температуры");
-        setIsLoading(false);
-      }
-    );
+    const intervalId = window.setInterval(() => {
+      void loadLatest();
+    }, 5000);
 
-    return () => unsubscribe();
+    return () => window.clearInterval(intervalId);
   }, []);
 
   useEffect(() => {
     void loadHistory(selectedPeriod, true);
+
+    const intervalId = window.setInterval(() => {
+      void loadHistory(selectedPeriod, false);
+    }, 30000);
+
+    return () => window.clearInterval(intervalId);
   }, [selectedPeriod]);
 
   useEffect(() => {
