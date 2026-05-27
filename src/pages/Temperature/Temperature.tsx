@@ -49,16 +49,49 @@ const PERIOD_OPTIONS = [
 
 type ReportPeriod = (typeof PERIOD_OPTIONS)[number]["value"];
 
-const POINT_INTERVAL_OPTIONS = [
-  { value: 0, label: "Все точки" },
-  { value: 1, label: "1 мин" },
-  { value: 5, label: "5 мин" },
-  { value: 10, label: "10 мин" },
-  { value: 30, label: "30 мин" },
-  { value: 60, label: "1 час" }
-] as const;
+type PointIntervalMinutes = number;
 
-type PointIntervalMinutes = (typeof POINT_INTERVAL_OPTIONS)[number]["value"];
+const POINT_INTERVAL_OPTIONS_BY_PERIOD: Record<
+  ReportPeriod,
+  { value: PointIntervalMinutes; label: string }[]
+> = {
+  day: [
+    { value: 0, label: "Все точки" },
+    { value: 1, label: "1 мин" },
+    { value: 5, label: "5 мин" },
+    { value: 10, label: "10 мин" },
+    { value: 30, label: "30 мин" },
+    { value: 60, label: "1 час" }
+  ],
+  week: [
+    { value: 0, label: "Все точки" },
+    { value: 360, label: "6 часов" },
+    { value: 720, label: "12 часов" },
+    { value: 1440, label: "1 день" },
+    { value: 2880, label: "2 дня" }
+  ],
+  month: [
+    { value: 0, label: "Все точки" },
+    { value: 1440, label: "1 день" },
+    { value: 4320, label: "3 дня" },
+    { value: 10080, label: "1 неделя" },
+    { value: 20160, label: "2 недели" }
+  ],
+  halfYear: [
+    { value: 0, label: "Все точки" },
+    { value: 10080, label: "1 неделя" },
+    { value: 20160, label: "2 недели" },
+    { value: 43200, label: "1 месяц" },
+    { value: 86400, label: "2 месяца" }
+  ]
+};
+
+const DEFAULT_POINT_INTERVAL_BY_PERIOD: Record<ReportPeriod, PointIntervalMinutes> = {
+  day: 10,
+  week: 360,
+  month: 1440,
+  halfYear: 10080
+};
 
 const CHART_WIDTH = 1000;
 const CHART_HEIGHT = 280;
@@ -251,7 +284,7 @@ const Temperature = () => {
   const [report, setReport] = useState<ReportData>();
   const [selectedPeriod, setSelectedPeriod] = useState<ReportPeriod>("day");
   const [selectedPointInterval, setSelectedPointInterval] =
-    useState<PointIntervalMinutes>(10);
+    useState<PointIntervalMinutes>(DEFAULT_POINT_INTERVAL_BY_PERIOD.day);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
@@ -415,6 +448,7 @@ const Temperature = () => {
   const selectedPeriodOption =
     PERIOD_OPTIONS.find((option) => option.value === selectedPeriod) ??
     PERIOD_OPTIONS[0];
+  const pointIntervalOptions = POINT_INTERVAL_OPTIONS_BY_PERIOD[selectedPeriod];
 
   const xAxisLabels = useMemo(() => {
     if (!chart || chart.points.length === 0) {
@@ -535,7 +569,10 @@ const Temperature = () => {
                     ? "temperature-period-button temperature-period-button-active"
                     : "temperature-period-button"
                 }
-                onClick={() => setSelectedPeriod(option.value)}
+                onClick={() => {
+                  setSelectedPeriod(option.value);
+                  setSelectedPointInterval(DEFAULT_POINT_INTERVAL_BY_PERIOD[option.value]);
+                }}
               >
                 {option.label}
               </button>
@@ -545,7 +582,7 @@ const Temperature = () => {
           <div className="temperature-point-controls">
             <span>Частота точек</span>
             <div className="temperature-period-switcher" role="tablist" aria-label="Частота точек графика">
-              {POINT_INTERVAL_OPTIONS.map((option) => (
+              {pointIntervalOptions.map((option) => (
                 <button
                   key={option.value}
                   type="button"
