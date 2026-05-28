@@ -29,6 +29,7 @@ type Place = {
   address: string;
   addressLink?: string;
   image: string;
+  weekday?: string;
   time?: string;
   isMain?: boolean;
 };
@@ -41,6 +42,18 @@ const DEFAULT_START_TIME = "08:00";
 const DEFAULT_END_TIME = "22:00";
 const DEFAULT_PLAYER_elo = 0;
 const INFO_DOC_ID = "info";
+const WEEKDAY_OPTIONS = [
+  "Понедельник",
+  "Вторник",
+  "Среда",
+  "Четверг",
+  "Пятница",
+  "Суббота",
+  "Воскресенье"
+] as const;
+type Weekday = (typeof WEEKDAY_OPTIONS)[number];
+const isWeekday = (value?: string): value is Weekday =>
+  value != null && WEEKDAY_OPTIONS.includes(value as Weekday);
 
 const parseTimeRange = (value?: string) => {
   if (!value) {
@@ -76,6 +89,7 @@ const Admin = () => {
   const [address, setAddress] = useState("");
   const [addressLink, setAddressLink] = useState("");
   const [image, setImage] = useState("");
+  const [weekday, setWeekday] = useState<Weekday>(WEEKDAY_OPTIONS[0]);
   const [startTime, setStartTime] = useState(DEFAULT_START_TIME);
   const [endTime, setEndTime] = useState(DEFAULT_END_TIME);
   const [isMain, setIsMain] = useState(false);
@@ -83,6 +97,7 @@ const Admin = () => {
   const [newPlaceAddress, setNewPlaceAddress] = useState("");
   const [newPlaceAddressLink, setNewPlaceAddressLink] = useState("");
   const [newPlaceImage, setNewPlaceImage] = useState("");
+  const [newPlaceWeekday, setNewPlaceWeekday] = useState<Weekday>(WEEKDAY_OPTIONS[0]);
   const [newPlaceStartTime, setNewPlaceStartTime] = useState(DEFAULT_START_TIME);
   const [newPlaceEndTime, setNewPlaceEndTime] = useState(DEFAULT_END_TIME);
   const [newPlaceIsMain, setNewPlaceIsMain] = useState(false);
@@ -126,6 +141,7 @@ const Admin = () => {
           address: dd.address,
           addressLink: dd.addressLink,
           image: dd.image,
+          weekday: dd.weekday,
           time: dd.time,
           isMain: dd.isMain
         };
@@ -205,6 +221,7 @@ const Admin = () => {
     setAddress(place.address);
     setAddressLink(place.addressLink || "");
     setImage(place.image);
+    setWeekday(isWeekday(place.weekday) ? place.weekday : WEEKDAY_OPTIONS[0]);
     const parsedTime = parseTimeRange(place.time);
     setStartTime(parsedTime.start);
     setEndTime(parsedTime.end);
@@ -227,6 +244,7 @@ const Admin = () => {
       address,
       addressLink,
       image,
+      weekday,
       time: buildTimeRange(startTime, endTime),
       isMain
     });
@@ -257,6 +275,7 @@ const Admin = () => {
         address: newPlaceAddress.trim(),
         addressLink: newPlaceAddressLink.trim(),
         image: newPlaceImage.trim(),
+        weekday: newPlaceWeekday,
         time: buildTimeRange(newPlaceStartTime, newPlaceEndTime),
         isMain: newPlaceIsMain
       });
@@ -265,6 +284,7 @@ const Admin = () => {
       setNewPlaceAddress("");
       setNewPlaceAddressLink("");
       setNewPlaceImage("");
+      setNewPlaceWeekday(WEEKDAY_OPTIONS[0]);
       setNewPlaceStartTime(DEFAULT_START_TIME);
       setNewPlaceEndTime(DEFAULT_END_TIME);
       setNewPlaceIsMain(false);
@@ -504,6 +524,17 @@ const Admin = () => {
             onChange={(e) => setNewPlaceImage(e.target.value)}
           />
 
+          <select
+            value={newPlaceWeekday}
+            onChange={(e) => setNewPlaceWeekday(e.target.value as Weekday)}
+          >
+            {WEEKDAY_OPTIONS.map((day) => (
+              <option key={day} value={day}>
+                {day}
+              </option>
+            ))}
+          </select>
+
           <div className="time-fields">
             <label className="time-field">
               <span>С</span>
@@ -579,6 +610,14 @@ const Admin = () => {
             value={image}
             onChange={(e) => setImage(e.target.value)}
           />
+
+          <select value={weekday} onChange={(e) => setWeekday(e.target.value as Weekday)}>
+            {WEEKDAY_OPTIONS.map((day) => (
+              <option key={day} value={day}>
+                {day}
+              </option>
+            ))}
+          </select>
 
           <div className="time-fields">
             <label className="time-field">

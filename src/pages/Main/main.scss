@@ -96,6 +96,15 @@
     margin-top: 10px
 }
 
+.daytime {
+    font-size: 22px;
+    letter-spacing: 0.06em;
+    /* text-transform: uppercase; */
+    color: rgb(255, 255, 255);
+    margin-bottom: 6px;
+    font-weight: 500;
+}
+
 .info-images-section {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
