@@ -3,7 +3,6 @@ import Main from "./pages/Main/Main";
 import Admin from "./pages/Admin/Admin";
 import Lineup from "./pages/Lineup/Lineup";
 import Reports from "./pages/Reports/Reports";
-import Temperature from "./pages/Temperature/Temperature";
 
 function App() {
   return (
@@ -18,7 +17,6 @@ function App() {
         <Route path="/adminx" element={<Admin />} />
         <Route path="/lineup" element={<Lineup />} />
         <Route path="/reports" element={<Reports />} />
-        <Route path="/temperature" element={<Temperature />} />
       </Routes>
     </BrowserRouter>
   );

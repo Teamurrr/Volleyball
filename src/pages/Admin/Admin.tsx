@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import "./Admin.scss";
+import { useLayoutEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 
 import { db } from "../../app/firebase";
@@ -85,6 +86,8 @@ const Admin = () => {
   const [newPlaceStartTime, setNewPlaceStartTime] = useState(DEFAULT_START_TIME);
   const [newPlaceEndTime, setNewPlaceEndTime] = useState(DEFAULT_END_TIME);
   const [newPlaceIsMain, setNewPlaceIsMain] = useState(false);
+  const [isSavingPlace, setIsSavingPlace] = useState(false);
+  const [placeError, setPlaceError] = useState("");
   const [infoId, setInfoId] = useState("");
   const [passLink, setPassLink] = useState("");
   const [qrCodeLink, setQrCodeLink] = useState("");
@@ -98,6 +101,7 @@ const Admin = () => {
   const [isResettingAllPlayers, setIsResettingAllPlayers] = useState(false);
   const [isSavingAttendanceReport, setIsSavingAttendanceReport] = useState(false);
   const [playerDrafts, setPlayerDrafts] = useState<Record<string, PlayerDraft>>({});
+  const pendingScrollRestoreRef = useRef<number | null>(null);
 
   const sortedPlayers = useMemo(
     () =>
@@ -184,6 +188,13 @@ const Admin = () => {
     });
   }, [players]);
 
+  useLayoutEffect(() => {
+    if (pendingScrollRestoreRef.current == null) return;
+
+    window.scrollTo({ top: pendingScrollRestoreRef.current });
+    pendingScrollRestoreRef.current = null;
+  }, [sortedPlayers]);
+
   const handleSelect = (id: string) => {
     setSelectedId(id);
 
@@ -224,36 +235,46 @@ const Admin = () => {
   };
 
   const createPlace = async () => {
-    if (!newPlaceName.trim() || !newPlaceAddress.trim() || !newPlaceImage.trim()) {
+    if (!newPlaceName.trim() || !newPlaceAddress.trim()) {
+      setPlaceError("Заполни название и адрес.");
       return;
     }
 
-    if (newPlaceIsMain) {
-      for (const place of places) {
-        await updateDoc(doc(db, "places", place.id), {
-          isMain: false
-        });
+    setIsSavingPlace(true);
+    setPlaceError("");
+
+    try {
+      if (newPlaceIsMain) {
+        for (const place of places) {
+          await updateDoc(doc(db, "places", place.id), {
+            isMain: false
+          });
+        }
       }
+
+      await addDoc(collection(db, "places"), {
+        name: newPlaceName.trim(),
+        address: newPlaceAddress.trim(),
+        addressLink: newPlaceAddressLink.trim(),
+        image: newPlaceImage.trim(),
+        time: buildTimeRange(newPlaceStartTime, newPlaceEndTime),
+        isMain: newPlaceIsMain
+      });
+
+      setNewPlaceName("");
+      setNewPlaceAddress("");
+      setNewPlaceAddressLink("");
+      setNewPlaceImage("");
+      setNewPlaceStartTime(DEFAULT_START_TIME);
+      setNewPlaceEndTime(DEFAULT_END_TIME);
+      setNewPlaceIsMain(false);
+
+      await fetchPlaces();
+    } catch {
+      setPlaceError("Не удалось сохранить зал. Проверь подключение к Firebase и права записи.");
+    } finally {
+      setIsSavingPlace(false);
     }
-
-    await addDoc(collection(db, "places"), {
-      name: newPlaceName.trim(),
-      address: newPlaceAddress.trim(),
-      addressLink: newPlaceAddressLink.trim(),
-      image: newPlaceImage.trim(),
-      time: buildTimeRange(newPlaceStartTime, newPlaceEndTime),
-      isMain: newPlaceIsMain
-    });
-
-    setNewPlaceName("");
-    setNewPlaceAddress("");
-    setNewPlaceAddressLink("");
-    setNewPlaceImage("");
-    setNewPlaceStartTime(DEFAULT_START_TIME);
-    setNewPlaceEndTime(DEFAULT_END_TIME);
-    setNewPlaceIsMain(false);
-
-    void fetchPlaces();
   };
 
   const createPlayer = async () => {
@@ -285,6 +306,10 @@ const Admin = () => {
     willCome: AttendanceStatus
   ) => {
     await updatePlayer(player.id, { willCome });
+  };
+
+  const preserveScrollPosition = () => {
+    pendingScrollRestoreRef.current = window.scrollY;
   };
 
   const saveInfo = async () => {
@@ -508,7 +533,11 @@ const Admin = () => {
             <span>Сделать главным сразу</span>
           </label>
 
-          <button onClick={() => void createPlace()}>Добавить зал</button>
+          <button onClick={() => void createPlace()} disabled={isSavingPlace}>
+            {isSavingPlace ? "Сохранение..." : "Добавить зал"}
+          </button>
+
+          {placeError && <p className="admin-note">{placeError}</p>}
 
           {newPlaceImage && (
             <img src={newPlaceImage} alt="preview new place" className="preview" />
@@ -752,6 +781,7 @@ const Admin = () => {
                               : ""
                           }
                           onClick={() => {
+                            preserveScrollPosition();
                             void setPlayerAttendance(player, "yes");
                             updatePlayerDraft(player.id, "willCome", "yes");
                           }}
@@ -765,6 +795,7 @@ const Admin = () => {
                               : ""
                           }
                           onClick={() => {
+                            preserveScrollPosition();
                             void setPlayerAttendance(player, "maybe");
                             updatePlayerDraft(player.id, "willCome", "maybe");
                           }}
@@ -778,6 +809,7 @@ const Admin = () => {
                               : ""
                           }
                           onClick={() => {
+                            preserveScrollPosition();
                             void setPlayerAttendance(player, "no");
                             updatePlayerDraft(player.id, "willCome", "no");
                           }}
