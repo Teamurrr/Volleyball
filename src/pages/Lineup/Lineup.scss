@@ -88,6 +88,7 @@
   background: rgba(15, 23, 42, 0.78);
   border: 1px solid rgba(148, 163, 184, 0.2);
   color: #f8fafc;
+  cursor: pointer;
   text-decoration: none;
   transition: transform 0.18s ease, border-color 0.18s ease, background-color 0.18s ease;
 }
@@ -222,6 +223,14 @@
   backdrop-filter: blur(12px);
 }
 
+.lineup-board-virtual-hover {
+  border-color: rgba(74, 222, 128, 0.62);
+  background: rgba(20, 83, 45, 0.52);
+  box-shadow:
+    0 0 0 2px rgba(74, 222, 128, 0.22),
+    0 22px 54px rgba(0, 0, 0, 0.3);
+}
+
 .lineup-teams-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -234,11 +243,18 @@
   padding: 18px;
   border-radius: 24px;
   border: 1px solid rgba(148, 163, 184, 0.16);
-  background:
-    linear-gradient(180deg, rgba(15, 23, 42, 0.86), rgba(8, 15, 28, 0.82)),
-    radial-gradient(circle at top, rgba(125, 211, 252, 0.08), transparent 38%);
   box-shadow: 0 18px 46px rgba(0, 0, 0, 0.22);
   backdrop-filter: blur(10px);
+}
+
+.team-dropzone-virtual-hover {
+  border-color: rgba(74, 222, 128, 0.62);
+  background:
+    linear-gradient(180deg, rgba(20, 83, 45, 0.62), rgba(8, 15, 28, 0.72)),
+    radial-gradient(circle at top, rgba(74, 222, 128, 0.18), transparent 40%);
+  box-shadow:
+    0 0 0 2px rgba(74, 222, 128, 0.22),
+    0 20px 46px rgba(0, 0, 0, 0.24);
 }
 
 .team-dropzone-header {
@@ -365,6 +381,22 @@
   transform: scale(0.985);
 }
 
+.lineup-card-virtual-hover {
+  border-color: rgba(125, 211, 252, 0.72);
+  box-shadow:
+    0 0 0 2px rgba(125, 211, 252, 0.22),
+    0 18px 32px rgba(2, 8, 23, 0.34);
+}
+
+.lineup-card-virtual-selected {
+  opacity: 0.82;
+  border-color: rgba(250, 204, 21, 0.72);
+  transform: scale(0.98);
+  box-shadow:
+    0 0 0 2px rgba(250, 204, 21, 0.24),
+    0 18px 32px rgba(2, 8, 23, 0.34);
+}
+
 .lineup-card-yes {
   border-color: rgba(34, 197, 94, 0.28);
   background: linear-gradient(90deg, rgba(20, 83, 45, 0.55), rgba(15, 23, 42, 0.92));
@@ -454,6 +486,331 @@
   border: 1px dashed rgba(148, 163, 184, 0.28);
   color: #94a3b8;
   text-align: center;
+}
+
+.lineup-camera-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  background: rgba(2, 6, 23, 0.68);
+  box-sizing: border-box;
+}
+
+.lineup-camera-modal-panel {
+  position: relative;
+  width: calc(100vw - 16px);
+  height: calc(100vh - 16px);
+  max-height: none;
+  overflow: auto;
+  padding: 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(8, 15, 28, 0.94)),
+    radial-gradient(circle at top left, rgba(125, 211, 252, 0.1), transparent 34%);
+  box-shadow: 0 34px 90px rgba(0, 0, 0, 0.48);
+}
+
+.lineup-camera-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.lineup-camera-modal-header h2 {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 22px;
+}
+
+.lineup-camera-modal-content {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  min-height: calc(100vh - 110px);
+}
+
+.lineup-camera-preview {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  min-height: 100%;
+  border-radius: 20px;
+  border: 1px solid rgba(125, 211, 252, 0.2);
+  background:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.84), rgba(8, 47, 73, 0.64)),
+    repeating-linear-gradient(
+      45deg,
+      rgba(148, 163, 184, 0.08) 0,
+      rgba(148, 163, 184, 0.08) 1px,
+      transparent 1px,
+      transparent 14px
+    );
+}
+
+.lineup-camera-video {
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  display: block;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+
+.lineup-camera-workspace {
+  position: relative;
+  z-index: 1;
+  padding: 10px;
+}
+
+.lineup-camera-workspace .lineup-formations {
+  margin-top: 0;
+}
+
+.lineup-camera-workspace .lineup-formations,
+.lineup-camera-workspace .lineup-board,
+.lineup-camera-workspace .team-dropzone {
+  padding: 12px;
+  border-radius: 16px;
+}
+
+.lineup-camera-workspace .lineup-formations {
+  margin-bottom: 10px;
+}
+
+.lineup-camera-workspace .lineup-teams-grid {
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.lineup-camera-workspace .formation-card {
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.48);
+}
+
+.lineup-camera-workspace .formation-card-top {
+  margin-bottom: 8px;
+}
+
+.lineup-camera-workspace .formation-card-top h3 {
+  font-size: 13px;
+}
+
+.lineup-camera-workspace .formation-button {
+  min-height: 32px;
+  padding: 0 8px;
+  border-radius: 9px;
+  font-size: 12px;
+}
+
+.lineup-camera-workspace .team-dropzone {
+  min-height: 170px;
+}
+
+.lineup-camera-workspace .team-dropzone-header {
+  margin-bottom: 8px;
+}
+
+.lineup-camera-workspace .team-dropzone-header h2 {
+  font-size: 17px;
+}
+
+.lineup-camera-workspace .team-dropzone-header p,
+.lineup-camera-workspace .lineup-board-header p {
+  font-size: 12px;
+}
+
+.lineup-camera-workspace .team-collapse-button {
+  min-height: 28px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+.lineup-camera-workspace .lineup-board-header {
+  margin-bottom: 10px;
+}
+
+.lineup-camera-workspace .lineup-list,
+.lineup-camera-workspace .team-dropzone-list {
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 7px;
+}
+
+.lineup-camera-workspace .lineup-card {
+  padding: 8px;
+  border-radius: 11px;
+}
+
+.lineup-camera-workspace .lineup-player-name,
+.lineup-camera-workspace .lineup-player-position,
+.lineup-camera-workspace .lineup-elo-label {
+  font-size: 12px;
+}
+
+.lineup-camera-workspace .lineup-elo {
+  padding: 5px 7px;
+}
+
+.lineup-camera-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(2, 6, 23, 0.36);
+  box-sizing: border-box;
+}
+
+.lineup-camera-status {
+  max-width: min(420px, 100%);
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(15, 23, 42, 0.86);
+  color: #e2e8f0;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.lineup-camera-status-loading {
+  border-color: rgba(125, 211, 252, 0.36);
+  color: #bae6fd;
+}
+
+.lineup-camera-status-error {
+  border-color: rgba(248, 113, 113, 0.38);
+  color: #fecaca;
+}
+
+.lineup-hand-tracking-status {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 5;
+  max-width: min(360px, calc(100% - 28px));
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(15, 23, 42, 0.84);
+  color: #e2e8f0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.lineup-hand-tracking-status-loading {
+  border-color: rgba(125, 211, 252, 0.36);
+  color: #bae6fd;
+}
+
+.lineup-hand-tracking-status-ready {
+  border-color: rgba(74, 222, 128, 0.34);
+  color: #bbf7d0;
+}
+
+.lineup-hand-tracking-status-error {
+  border-color: rgba(248, 113, 113, 0.38);
+  color: #fecaca;
+}
+
+.lineup-virtual-click-status {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: 5;
+  max-width: min(300px, calc(100% - 28px));
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(15, 23, 42, 0.84);
+  color: #cbd5e1;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.lineup-virtual-click-status-pressed {
+  border-color: rgba(74, 222, 128, 0.42);
+  background: rgba(20, 83, 45, 0.72);
+  color: #dcfce7;
+}
+
+.lineup-hand-cursor {
+  position: absolute;
+  z-index: 60;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid #e0f2fe;
+  background: rgba(14, 165, 233, 0.22);
+  box-shadow:
+    0 0 0 7px rgba(14, 165, 233, 0.18),
+    0 10px 22px rgba(2, 8, 23, 0.38);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  will-change: transform;
+  transition:
+    transform 0.12s ease,
+    background-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.lineup-hand-cursor-pinched {
+  transform: translate(-50%, -50%) scale(0.75);
+  background: rgba(34, 197, 94, 0.38);
+  border-color: #bbf7d0;
+  box-shadow:
+    0 0 0 10px rgba(34, 197, 94, 0.2),
+    0 10px 22px rgba(2, 8, 23, 0.38);
+}
+
+.lineup-hand-cursor-pressed {
+  transform: translate(-50%, -50%) scale(0.64);
+  border-color: #dcfce7;
+  background: rgba(34, 197, 94, 0.62);
+  box-shadow:
+    0 0 0 14px rgba(34, 197, 94, 0.22),
+    0 0 26px rgba(34, 197, 94, 0.42),
+    0 10px 22px rgba(2, 8, 23, 0.38);
+}
+
+.lineup-hand-cursor-secondary {
+  border-color: #fde68a;
+  background: rgba(250, 204, 21, 0.22);
+  box-shadow:
+    0 0 0 7px rgba(250, 204, 21, 0.16),
+    0 10px 22px rgba(2, 8, 23, 0.38);
+}
+
+.lineup-hand-cursor-secondary.lineup-hand-cursor-pinched {
+  border-color: #fef3c7;
+  background: rgba(250, 204, 21, 0.38);
+  box-shadow:
+    0 0 0 10px rgba(250, 204, 21, 0.2),
+    0 10px 22px rgba(2, 8, 23, 0.38);
+}
+
+.lineup-hand-cursor-dragging {
+  transform: translate(-50%, -50%) scale(0.7);
+  border-color: #fef3c7;
+  background: rgba(250, 204, 21, 0.52);
+  box-shadow:
+    0 0 0 14px rgba(250, 204, 21, 0.2),
+    0 14px 26px rgba(2, 8, 23, 0.4);
+}
+
+.lineup-camera-workspace .lineup-formations,
+.lineup-camera-workspace .lineup-board,
+.lineup-camera-workspace .team-dropzone {
+  box-shadow: none;
+  background-color: rgba(8, 15, 28, 0.42);
 }
 
 @media (max-width: 680px) {
@@ -568,5 +925,47 @@
   .lineup-elo {
     width: 100%;
     box-sizing: border-box;
+  }
+
+  .lineup-camera-modal {
+    padding: 10px;
+    align-items: stretch;
+  }
+
+  .lineup-camera-modal-panel {
+    max-height: calc(100vh - 20px);
+    padding: 12px;
+    border-radius: 18px;
+  }
+
+  .lineup-camera-modal-header {
+    align-items: flex-start;
+  }
+
+  .lineup-camera-modal-header h2 {
+    font-size: 22px;
+  }
+
+  .lineup-camera-preview {
+    min-height: 170px;
+    border-radius: 16px;
+  }
+
+  .lineup-camera-status {
+    border-radius: 14px;
+  }
+
+  .lineup-hand-tracking-status {
+    top: 10px;
+    left: 10px;
+    max-width: calc(100% - 20px);
+    border-radius: 14px;
+  }
+
+  .lineup-virtual-click-status {
+    right: 10px;
+    bottom: 10px;
+    max-width: calc(100% - 20px);
+    border-radius: 14px;
   }
 }
