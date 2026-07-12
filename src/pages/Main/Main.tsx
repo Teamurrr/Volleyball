@@ -260,7 +260,7 @@ const Main = () => {
         <div className="players-header">
           <h2>Игроки</h2>
           <p className="players-count">
-            Всего: {visiblePlayers.length} ({confirmedPlayersCount} точно)
+            Всего: {attendingPlayersCount} ({confirmedPlayersCount} точно)
           </p>
         </div>
 
