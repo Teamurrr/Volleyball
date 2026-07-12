@@ -34,13 +34,15 @@ type SnapshotPoint = {
 const CHART_COLORS: Record<AttendanceStatus, string> = {
   yes: "#22c55e",
   maybe: "#f59e0b",
+  prospect: "#8b5cf6",
   no: "#ef4444"
 };
 
 const STATUS_LEVEL: Record<AttendanceStatus, number> = {
   no: 0,
-  maybe: 1,
-  yes: 2
+  prospect: 1,
+  maybe: 2,
+  yes: 3
 };
 
 const formatShortDate = (value: number) =>
@@ -80,7 +82,7 @@ const getStatusPath = (timeline: PlayerTimelineEntry[], width: number, height: n
     timeline.map((entry) => STATUS_LEVEL[entry.willCome]),
     width,
     height,
-    2
+    3
   );
 
 const Reports = () => {
@@ -103,6 +105,7 @@ const Reports = () => {
             counts: {
               yes: 0,
               maybe: 0,
+              prospect: 0,
               no: 0
             },
             timeline: []
@@ -159,6 +162,7 @@ const Reports = () => {
         {
           yes: 0,
           maybe: 0,
+          prospect: 0,
           no: 0
         } as Record<AttendanceStatus, number>
       ),
@@ -173,6 +177,7 @@ const Reports = () => {
           const counts: Record<AttendanceStatus, number> = {
             yes: 0,
             maybe: 0,
+            prospect: 0,
             no: 0
           };
 
@@ -194,7 +199,12 @@ const Reports = () => {
     const height = 240;
     const maxValue =
       snapshotSeries.reduce((max, item) => {
-        const localMax = Math.max(item.counts.yes, item.counts.maybe, item.counts.no);
+        const localMax = Math.max(
+          item.counts.yes,
+          item.counts.maybe,
+          item.counts.prospect,
+          item.counts.no
+        );
         return Math.max(max, localMax);
       }, 0) || 1;
 
@@ -210,6 +220,12 @@ const Reports = () => {
       ),
       maybePath: buildLinePath(
         snapshotSeries.map((item) => item.counts.maybe),
+        width,
+        height,
+        maxValue
+      ),
+      prospectPath: buildLinePath(
+        snapshotSeries.map((item) => item.counts.prospect),
         width,
         height,
         maxValue
@@ -267,6 +283,10 @@ const Reports = () => {
             <strong>{totals.maybe}</strong>
           </article>
           <article className="reports-summary-card">
+            <span>В перспективе</span>
+            <strong>{totals.prospect}</strong>
+          </article>
+          <article className="reports-summary-card">
             <span>Не придут</span>
             <strong>{totals.no}</strong>
           </article>
@@ -283,6 +303,7 @@ const Reports = () => {
               <div className="reports-legend">
                 <span className="reports-legend-item reports-legend-yes">Да</span>
                 <span className="reports-legend-item reports-legend-maybe">Возможно</span>
+                <span className="reports-legend-item reports-legend-prospect">В перспективе</span>
                 <span className="reports-legend-item reports-legend-no">Нет</span>
               </div>
             </div>
@@ -318,6 +339,7 @@ const Reports = () => {
 
                   <path d={globalChart.yesPath} className="overview-line overview-line-yes" />
                   <path d={globalChart.maybePath} className="overview-line overview-line-maybe" />
+                  <path d={globalChart.prospectPath} className="overview-line overview-line-prospect" />
                   <path d={globalChart.noPath} className="overview-line overview-line-no" />
 
                   {snapshotSeries.map((item, index) => {
@@ -328,6 +350,19 @@ const Reports = () => {
 
                     return (
                       <g key={item.reportId}>
+                        <circle
+                          cx={x}
+                          cy={
+                            globalChart.height -
+                            (item.counts.prospect / globalChart.maxValue) * globalChart.height
+                          }
+                          r="4"
+                          fill={CHART_COLORS.prospect}
+                        >
+                          <title>
+                            {`${formatLongDate(item.createdAt)} · В перспективе: ${item.counts.prospect}`}
+                          </title>
+                        </circle>
                         <circle
                           cx={x}
                           cy={
@@ -442,6 +477,10 @@ const Reports = () => {
                     <span>{getAttendanceLabel("maybe")}</span>
                     <strong>{player.counts.maybe}</strong>
                   </div>
+                  <div className="player-stat player-stat-prospect">
+                    <span>{getAttendanceLabel("prospect")}</span>
+                    <strong>{player.counts.prospect}</strong>
+                  </div>
                   <div className="player-stat player-stat-no">
                     <span>{getAttendanceLabel("no")}</span>
                     <strong>{player.counts.no}</strong>
@@ -452,6 +491,7 @@ const Reports = () => {
                   <div className="player-line-chart-axis">
                     <span>Да</span>
                     <span>Возможно</span>
+                    <span>В перспективе</span>
                     <span>Нет</span>
                   </div>
 
@@ -492,7 +532,7 @@ const Reports = () => {
                         const y =
                           12 +
                           (playerChartHeight - 24) -
-                          (STATUS_LEVEL[entry.willCome] / 2) * (playerChartHeight - 24);
+                          (STATUS_LEVEL[entry.willCome] / 3) * (playerChartHeight - 24);
 
                         return (
                           <circle

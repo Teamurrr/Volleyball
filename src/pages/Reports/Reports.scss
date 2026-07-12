@@ -163,6 +163,10 @@
   background: #f59e0b;
 }
 
+.reports-legend-prospect::before {
+  background: #8b5cf6;
+}
+
 .reports-legend-no::before {
   background: #ef4444;
 }
@@ -216,6 +220,10 @@
 
 .overview-line-maybe {
   stroke: #f59e0b;
+}
+
+.overview-line-prospect {
+  stroke: #8b5cf6;
 }
 
 .overview-line-no {
@@ -312,7 +320,7 @@
 
 .player-report-stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 18px;
 }
@@ -340,6 +348,10 @@
 
 .player-stat-maybe {
   background: rgba(133, 77, 14, 0.44);
+}
+
+.player-stat-prospect {
+  background: rgba(91, 33, 182, 0.44);
 }
 
 .player-stat-no {

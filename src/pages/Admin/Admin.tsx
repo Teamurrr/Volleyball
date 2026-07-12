@@ -77,7 +77,8 @@ const buildTimeRange = (start: string, end: string) => `${start} - ${end}`;
 const getAttendancePriority = (value: AttendanceStatus) => {
   if (value === "yes") return 0;
   if (value === "maybe") return 1;
-  return 2;
+  if (value === "prospect") return 2;
+  return 3;
 };
 
 const Admin = () => {
@@ -840,6 +841,20 @@ const Admin = () => {
                           }}
                         >
                           Возможно
+                        </button>
+                        <button
+                          className={
+                            (playerDrafts[player.id]?.willCome ?? player.willCome) === "prospect"
+                              ? "is-active"
+                              : ""
+                          }
+                          onClick={() => {
+                            preserveScrollPosition();
+                            void setPlayerAttendance(player, "prospect");
+                            updatePlayerDraft(player.id, "willCome", "prospect");
+                          }}
+                        >
+                          В перспективе
                         </button>
                         <button
                           className={

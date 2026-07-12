@@ -1,4 +1,4 @@
-export type AttendanceStatus = "yes" | "maybe" | "no";
+export type AttendanceStatus = "yes" | "maybe" | "prospect" | "no";
 
 export type Player = {
   elo: number;
@@ -22,5 +22,6 @@ export const normalizeAttendanceStatus = (
 export const getAttendanceLabel = (value: AttendanceStatus) => {
   if (value === "yes") return "Да";
   if (value === "maybe") return "Возможно";
+  if (value === "prospect") return "В перспективе";
   return "Нет";
 };
