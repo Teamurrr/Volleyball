@@ -33,8 +33,16 @@ const INFO_DOC_ID = "info";
 const getAttendancePriority = (value: AttendanceStatus) => {
   if (value === "yes") return 0;
   if (value === "maybe") return 1;
-  return 2;
+  if (value === "prospect") return 2;
+  return 3;
 };
+
+const getAttendanceClassName = (value: AttendanceStatus) =>
+  value === "maybe"
+    ? "maybe"
+    : value === "prospect"
+      ? "prospect"
+      : undefined;
 
 const Main = () => {
   const navigate = useNavigate();
@@ -55,7 +63,7 @@ const Main = () => {
       [...players]
         .filter((player) => {
           const attendance = normalizeAttendanceStatus(player.willCome);
-          return attendance === "yes" || attendance === "maybe";
+          return attendance === "yes" || attendance === "maybe" || attendance === "prospect";
         })
         .sort(
           (a, b) =>
@@ -69,7 +77,11 @@ const Main = () => {
     (player) => normalizeAttendanceStatus(player.willCome) === "yes"
   ).length;
 
-  const playersToSplit = Math.max(visiblePlayers.length - 1, 0);
+  const attendingPlayersCount = visiblePlayers.filter((player) => {
+    const attendance = normalizeAttendanceStatus(player.willCome);
+    return attendance === "yes" || attendance === "maybe";
+  }).length;
+  const playersToSplit = Math.max(attendingPlayersCount - 1, 0);
   const perPlayerAmount =
     playersToSplit > 0 && (info.totalPaid || 0) > 0
       ? Math.ceil((info.totalPaid || 0) / playersToSplit)
@@ -270,15 +282,26 @@ const Main = () => {
               {visiblePlayers.length > 0 ? (
                 visiblePlayers.map((player) => {
                   const attendance = normalizeAttendanceStatus(player.willCome);
+                  const attendanceClassName = getAttendanceClassName(attendance);
 
                   return (
                     <tr
                       key={player.id}
-                      className={attendance === "maybe" ? "player-row-maybe" : undefined}
+                      className={
+                        attendanceClassName
+                          ? `player-row-${attendanceClassName}`
+                          : undefined
+                      }
                     >
                       <td className="player-name">{player.name}</td>
                       {/* <td>{player.position || "-"}</td> */}
-                      <td className={attendance === "maybe" ? "player-status-maybe" : undefined}>
+                      <td
+                        className={
+                          attendanceClassName
+                            ? `player-status-${attendanceClassName}`
+                            : undefined
+                        }
+                      >
                         {getAttendanceLabel(attendance)}
                       </td>
                       <td>{player.paid ? "Да" : "Нет"}</td>

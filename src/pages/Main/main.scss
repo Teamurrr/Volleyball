@@ -289,6 +289,15 @@
   font-weight: 700;
 }
 
+.player-row-prospect td {
+  background: rgba(59, 130, 246, 0.06);
+}
+
+.player-status-prospect {
+  color: #60a5fa !important;
+  font-weight: 700;
+}
+
 .photo-modal-image {
   max-width: min(90vw, 960px);
   max-height: 85vh;
