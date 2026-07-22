@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
+import type { TDocumentDefinitions } from "pdfmake/interfaces";
 import "./Reports.scss";
 
+import type { AttendanceReport } from "../../entities/attendanceReport";
 import { useAttendanceReports } from "../../features/reports/hook";
 
 const formatReportDate = (value: number) =>
@@ -11,22 +13,100 @@ const formatReportDate = (value: number) =>
     year: "numeric"
   });
 
+const formatFileDate = (value: number) => {
+  const date = new Date(value);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
 const Reports = () => {
   const { reports, reportsError } = useAttendanceReports();
-  const [printReportId, setPrintReportId] = useState<string | null>(null);
+  const [downloadingReportId, setDownloadingReportId] = useState<string | null>(null);
+  const [pdfError, setPdfError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const resetPrintReport = () => setPrintReportId(null);
+  const downloadReportPdf = async (report: AttendanceReport) => {
+    const attendedPlayers = report.players.filter((player) => player.willCome === "yes");
+    const paidPlayersCount = attendedPlayers.filter((player) => player.paid).length;
+    const tableBody = attendedPlayers.map((player, index) => [
+      { text: String(index + 1), alignment: "center" as const },
+      player.name,
+      { text: player.paid ? "Да" : "Нет", alignment: "center" as const },
+      ""
+    ]);
+    const documentDefinition: TDocumentDefinitions = {
+      pageSize: "A4",
+      pageMargins: [32, 32, 32, 32],
+      content: [
+        {
+          text: `Отчет за ${formatReportDate(report.createdAt)}`,
+          style: "title"
+        },
+        {
+          text: `Пришли: ${attendedPlayers.length} · Оплатили: ${paidPlayersCount}`,
+          margin: [0, 0, 0, 12]
+        },
+        {
+          table: {
+            headerRows: 1,
+            widths: [28, "*", 70, 90],
+            body: [
+              [
+                { text: "№", style: "tableHeader", alignment: "center" },
+                { text: "Имя", style: "tableHeader" },
+                { text: "Оплатил", style: "tableHeader", alignment: "center" },
+                { text: "extra", style: "tableHeader", alignment: "center" }
+              ],
+              ...tableBody
+            ]
+          },
+          layout: {
+            fillColor: (rowIndex: number) => (rowIndex === 0 ? "#eef2f0" : null),
+            hLineColor: () => "#6b7280",
+            vLineColor: () => "#6b7280",
+            paddingTop: () => 6,
+            paddingBottom: () => 6
+          }
+        }
+      ],
+      defaultStyle: {
+        font: "Roboto",
+        fontSize: 10,
+        color: "#111827"
+      },
+      styles: {
+        title: {
+          fontSize: 16,
+          bold: true,
+          margin: [0, 0, 0, 8]
+        },
+        tableHeader: {
+          bold: true
+        }
+      }
+    };
 
-    window.addEventListener("afterprint", resetPrintReport);
-    return () => window.removeEventListener("afterprint", resetPrintReport);
-  }, []);
+    setDownloadingReportId(report.id);
+    setPdfError(null);
 
-  const printSingleReport = (reportId: string) => {
-    setPrintReportId(reportId);
-    window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => window.print());
-    });
+    try {
+      const [pdfMakeModule, pdfFonts] = await Promise.all([
+        import("pdfmake/build/pdfmake"),
+        import("pdfmake/build/vfs_fonts")
+      ]);
+      const pdfMake = pdfMakeModule.default;
+
+      pdfMake.addVirtualFileSystem(pdfFonts.default);
+      await pdfMake
+        .createPdf(documentDefinition)
+        .download(`volleyball-report-${formatFileDate(report.createdAt)}.pdf`);
+    } catch {
+      setPdfError("Не удалось скачать PDF. Попробуйте еще раз.");
+    } finally {
+      setDownloadingReportId(null);
+    }
   };
 
   return (
@@ -43,13 +123,6 @@ const Reports = () => {
           </div>
 
           <div className="reports-header-actions">
-            <button
-              type="button"
-              className="reports-print-button"
-              onClick={() => window.print()}
-            >
-              Сохранить в PDF
-            </button>
             <Link className="reports-link" to="/adminx">
               Админка
             </Link>
@@ -60,6 +133,7 @@ const Reports = () => {
         </header>
 
         {reportsError && <p className="reports-message">{reportsError}</p>}
+        {pdfError && <p className="reports-message">{pdfError}</p>}
 
         {!reportsError && reports.length === 0 && (
           <div className="reports-empty-card">
@@ -76,14 +150,7 @@ const Reports = () => {
             const paidPlayersCount = attendedPlayers.filter((player) => player.paid).length;
 
             return (
-              <article
-                key={report.id}
-                className={`payment-report-card${
-                  printReportId && printReportId !== report.id
-                    ? " payment-report-card--hidden-for-print"
-                    : ""
-                }`}
-              >
+              <article key={report.id} className="payment-report-card">
                 <div className="payment-report-heading">
                   <h2>Дата: {formatReportDate(report.createdAt)}</h2>
                   <div className="payment-report-heading-actions">
@@ -93,9 +160,10 @@ const Reports = () => {
                     <button
                       type="button"
                       className="payment-report-pdf-button"
-                      onClick={() => printSingleReport(report.id)}
+                      onClick={() => void downloadReportPdf(report)}
+                      disabled={downloadingReportId === report.id}
                     >
-                      PDF за эту дату
+                      {downloadingReportId === report.id ? "Создаем PDF..." : "Скачать PDF"}
                     </button>
                   </div>
                 </div>

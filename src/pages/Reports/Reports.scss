@@ -50,7 +50,6 @@
   gap: 10px;
 }
 
-.reports-print-button,
 .reports-link {
   display: inline-flex;
   align-items: center;
@@ -62,12 +61,6 @@
   font: inherit;
   font-weight: 700;
   text-decoration: none;
-}
-
-.reports-print-button {
-  background: #22c55e;
-  color: #07210f;
-  cursor: pointer;
 }
 
 .reports-link {
@@ -125,6 +118,11 @@
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
+}
+
+.payment-report-pdf-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
 }
 
 .payment-report-table {
@@ -226,10 +224,6 @@
   .reports-kicker,
   .reports-subtitle,
   .payment-report-pdf-button {
-    display: none;
-  }
-
-  .payment-report-card--hidden-for-print {
     display: none;
   }
 
