@@ -156,8 +156,13 @@
   text-align: center !important;
 }
 
+.payment-report-mark {
+  width: 82px;
+  text-align: center !important;
+}
+
 .payment-report-extra {
-  width: 130px;
+  width: 100px;
   text-align: center !important;
 }
 
@@ -197,7 +202,11 @@
   }
 
   .payment-report-extra {
-    width: 90px;
+    width: 76px;
+  }
+
+  .payment-report-mark {
+    width: 64px;
   }
 }
 

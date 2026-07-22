@@ -34,6 +34,8 @@ const Reports = () => {
       { text: String(index + 1), alignment: "center" as const },
       player.name,
       { text: player.paid ? "Да" : "Нет", alignment: "center" as const },
+      "",
+      "",
       ""
     ]);
     const documentDefinition: TDocumentDefinitions = {
@@ -51,12 +53,14 @@ const Reports = () => {
         {
           table: {
             headerRows: 1,
-            widths: [28, "*", 70, 90],
+            widths: [28, "*", 60, 60, 60, 75],
             body: [
               [
                 { text: "№", style: "tableHeader", alignment: "center" },
                 { text: "Имя", style: "tableHeader" },
                 { text: "Оплатил", style: "tableHeader", alignment: "center" },
+                { text: "f1", style: "tableHeader", alignment: "center" },
+                { text: "f2", style: "tableHeader", alignment: "center" },
                 { text: "extra", style: "tableHeader", alignment: "center" }
               ],
               ...tableBody
@@ -175,6 +179,8 @@ const Reports = () => {
                         <th className="payment-report-number">№</th>
                         <th>Имя</th>
                         <th className="payment-report-paid">Оплатил</th>
+                        <th className="payment-report-mark">f1</th>
+                        <th className="payment-report-mark">f2</th>
                         <th className="payment-report-extra">extra</th>
                       </tr>
                     </thead>
@@ -186,6 +192,8 @@ const Reports = () => {
                           <td className="payment-report-paid">
                             {player.paid ? "Да" : "Нет"}
                           </td>
+                          <td className="payment-report-mark" aria-label="Место для отметки f1" />
+                          <td className="payment-report-mark" aria-label="Место для отметки f2" />
                           <td className="payment-report-extra" aria-label="Место для отметки" />
                         </tr>
                       ))}
