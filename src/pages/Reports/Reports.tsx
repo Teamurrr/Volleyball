@@ -21,8 +21,8 @@ const Reports = () => {
             <p className="reports-kicker">Оплаты по датам</p>
             <h1>Отчеты</h1>
             <p className="reports-subtitle">
-              В каждом отчете показаны только оплатившие игроки. Пустая колонка
-              extra предназначена для отметок после печати.
+              В каждом отчете показан список игроков со статусом оплаты. Пустая
+              колонка extra предназначена для отметок после печати.
             </p>
           </div>
 
@@ -54,36 +54,42 @@ const Reports = () => {
 
         <section className="reports-list" aria-label="Отчеты по оплатам">
           {reports.map((report) => {
-            const paidPlayers = report.players.filter((player) => player.paid);
+            const paidPlayersCount = report.players.filter((player) => player.paid).length;
 
             return (
               <article key={report.id} className="payment-report-card">
                 <div className="payment-report-heading">
                   <h2>Дата: {formatReportDate(report.createdAt)}</h2>
-                  <span>Оплатили: {paidPlayers.length}</span>
+                  <span>
+                    Оплатили: {paidPlayersCount} из {report.players.length}
+                  </span>
                 </div>
 
-                {paidPlayers.length > 0 ? (
+                {report.players.length > 0 ? (
                   <table className="payment-report-table">
                     <thead>
                       <tr>
                         <th className="payment-report-number">№</th>
-                        <th>Оплатил</th>
+                        <th>Имя</th>
+                        <th className="payment-report-paid">Оплатил</th>
                         <th className="payment-report-extra">extra</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {paidPlayers.map((player, index) => (
+                      {report.players.map((player, index) => (
                         <tr key={`${report.id}-${player.playerId || index}`}>
                           <td className="payment-report-number">{index + 1}</td>
                           <td>{player.name}</td>
+                          <td className="payment-report-paid">
+                            {player.paid ? "Да" : "Нет"}
+                          </td>
                           <td className="payment-report-extra" aria-label="Место для отметки" />
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 ) : (
-                  <p className="payment-report-empty">В этом отчете оплативших нет.</p>
+                  <p className="payment-report-empty">В этом отчете игроков нет.</p>
                 )}
               </article>
             );
