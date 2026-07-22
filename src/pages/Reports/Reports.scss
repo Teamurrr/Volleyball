@@ -3,7 +3,10 @@
   padding: 32px 20px 48px;
   box-sizing: border-box;
   text-align: left;
-  background: #f4f7f5;
+  background:
+    radial-gradient(circle at top left, rgba(14, 165, 233, 0.12), transparent 26%),
+    radial-gradient(circle at right, rgba(34, 197, 94, 0.12), transparent 24%),
+    linear-gradient(180deg, #051018 0%, #0b1726 55%, #122033 100%);
 }
 
 .reports-shell {
@@ -21,7 +24,7 @@
 
 .reports-kicker {
   margin: 0 0 8px;
-  color: #15803d;
+  color: #7dd3fc;
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -30,13 +33,13 @@
 
 .reports-header h1 {
   margin: 0;
-  color: #111827;
+  color: #f8fafc;
 }
 
 .reports-subtitle {
   max-width: 590px;
   margin: 12px 0 0;
-  color: #4b5563;
+  color: #cbd5e1;
   line-height: 1.55;
 }
 
@@ -54,7 +57,7 @@
   justify-content: center;
   min-height: 44px;
   padding: 0 16px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: 999px;
   font: inherit;
   font-weight: 700;
@@ -62,14 +65,14 @@
 }
 
 .reports-print-button {
-  background: #16a34a;
-  color: #fff;
+  background: #22c55e;
+  color: #07210f;
   cursor: pointer;
 }
 
 .reports-link {
-  background: #fff;
-  color: #1f2937;
+  background: rgba(15, 23, 42, 0.74);
+  color: #f8fafc;
 }
 
 .reports-list {
@@ -80,10 +83,10 @@
 .payment-report-card,
 .reports-empty-card {
   padding: 22px;
-  border: 1px solid #d1d5db;
+  border: 1px solid rgba(148, 163, 184, 0.16);
   border-radius: 20px;
-  background: #fff;
-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+  background: rgba(8, 15, 28, 0.78);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.2);
 }
 
 .payment-report-heading {
@@ -97,18 +100,37 @@
 .payment-report-heading h2,
 .reports-empty-card h2 {
   margin: 0;
-  color: #111827;
+  color: #f8fafc;
 }
 
-.payment-report-heading span {
-  color: #4b5563;
+.payment-report-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.payment-report-heading-actions span {
+  color: #94a3b8;
   font-size: 14px;
+}
+
+.payment-report-pdf-button {
+  min-height: 36px;
+  padding: 0 13px;
+  border: 1px solid rgba(125, 211, 252, 0.35);
+  border-radius: 999px;
+  background: rgba(14, 165, 233, 0.14);
+  color: #bae6fd;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .payment-report-table {
   width: 100%;
   border-collapse: collapse;
-  color: #111827;
+  color: #e2e8f0;
 }
 
 .payment-report-table th,
@@ -116,13 +138,13 @@
   height: 48px;
   padding: 8px 12px;
   box-sizing: border-box;
-  border: 1px solid #9ca3af;
+  border: 1px solid rgba(148, 163, 184, 0.35);
   text-align: left;
 }
 
 .payment-report-table th {
-  background: #eef2f0;
-  color: #111827;
+  background: rgba(15, 23, 42, 0.9);
+  color: #f8fafc;
   font-size: 14px;
 }
 
@@ -138,7 +160,6 @@
 
 .payment-report-extra {
   width: 130px;
-  background: #fff;
   text-align: center !important;
 }
 
@@ -146,7 +167,7 @@
 .reports-empty-card p,
 .reports-message {
   margin: 0;
-  color: #4b5563;
+  color: #94a3b8;
 }
 
 .reports-empty-card h2 {
@@ -160,6 +181,11 @@
 
   .reports-header,
   .payment-report-heading {
+    flex-direction: column;
+  }
+
+  .payment-report-heading-actions {
+    align-items: flex-start;
     flex-direction: column;
   }
 
@@ -198,7 +224,12 @@
 
   .reports-header-actions,
   .reports-kicker,
-  .reports-subtitle {
+  .reports-subtitle,
+  .payment-report-pdf-button {
+    display: none;
+  }
+
+  .payment-report-card--hidden-for-print {
     display: none;
   }
 

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import "./Reports.scss";
 
@@ -12,6 +13,21 @@ const formatReportDate = (value: number) =>
 
 const Reports = () => {
   const { reports, reportsError } = useAttendanceReports();
+  const [printReportId, setPrintReportId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const resetPrintReport = () => setPrintReportId(null);
+
+    window.addEventListener("afterprint", resetPrintReport);
+    return () => window.removeEventListener("afterprint", resetPrintReport);
+  }, []);
+
+  const printSingleReport = (reportId: string) => {
+    setPrintReportId(reportId);
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => window.print());
+    });
+  };
 
   return (
     <main className="reports-page">
@@ -60,12 +76,28 @@ const Reports = () => {
             const paidPlayersCount = attendedPlayers.filter((player) => player.paid).length;
 
             return (
-              <article key={report.id} className="payment-report-card">
+              <article
+                key={report.id}
+                className={`payment-report-card${
+                  printReportId && printReportId !== report.id
+                    ? " payment-report-card--hidden-for-print"
+                    : ""
+                }`}
+              >
                 <div className="payment-report-heading">
                   <h2>Дата: {formatReportDate(report.createdAt)}</h2>
-                  <span>
-                    Оплатили: {paidPlayersCount} из {attendedPlayers.length}
-                  </span>
+                  <div className="payment-report-heading-actions">
+                    <span>
+                      Оплатили: {paidPlayersCount} из {attendedPlayers.length}
+                    </span>
+                    <button
+                      type="button"
+                      className="payment-report-pdf-button"
+                      onClick={() => printSingleReport(report.id)}
+                    >
+                      PDF за эту дату
+                    </button>
+                  </div>
                 </div>
 
                 {attendedPlayers.length > 0 ? (
