@@ -21,8 +21,8 @@ const Reports = () => {
             <p className="reports-kicker">Оплаты по датам</p>
             <h1>Отчеты</h1>
             <p className="reports-subtitle">
-              В каждом отчете показан список игроков со статусом оплаты. Пустая
-              колонка extra предназначена для отметок после печати.
+              В каждом отчете показаны только пришедшие игроки и их статус оплаты.
+              Пустая колонка extra предназначена для отметок после печати.
             </p>
           </div>
 
@@ -54,18 +54,21 @@ const Reports = () => {
 
         <section className="reports-list" aria-label="Отчеты по оплатам">
           {reports.map((report) => {
-            const paidPlayersCount = report.players.filter((player) => player.paid).length;
+            const attendedPlayers = report.players.filter(
+              (player) => player.willCome === "yes"
+            );
+            const paidPlayersCount = attendedPlayers.filter((player) => player.paid).length;
 
             return (
               <article key={report.id} className="payment-report-card">
                 <div className="payment-report-heading">
                   <h2>Дата: {formatReportDate(report.createdAt)}</h2>
                   <span>
-                    Оплатили: {paidPlayersCount} из {report.players.length}
+                    Оплатили: {paidPlayersCount} из {attendedPlayers.length}
                   </span>
                 </div>
 
-                {report.players.length > 0 ? (
+                {attendedPlayers.length > 0 ? (
                   <table className="payment-report-table">
                     <thead>
                       <tr>
@@ -76,7 +79,7 @@ const Reports = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {report.players.map((player, index) => (
+                      {attendedPlayers.map((player, index) => (
                         <tr key={`${report.id}-${player.playerId || index}`}>
                           <td className="payment-report-number">{index + 1}</td>
                           <td>{player.name}</td>
@@ -89,7 +92,7 @@ const Reports = () => {
                     </tbody>
                   </table>
                 ) : (
-                  <p className="payment-report-empty">В этом отчете игроков нет.</p>
+                  <p className="payment-report-empty">В этом отчете пришедших нет.</p>
                 )}
               </article>
             );
