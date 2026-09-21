@@ -29,6 +29,12 @@ type Info = {
 };
 
 const INFO_DOC_ID = "info";
+const PLAYER_NAME_COLLATOR = new Intl.Collator("ru", {
+  sensitivity: "base",
+  numeric: true
+});
+
+type PlayerSortMode = "attendance" | "name-asc" | "name-desc";
 
 const getAttendancePriority = (value: AttendanceStatus) => {
   if (value === "yes") return 0;
@@ -56,28 +62,45 @@ const Main = () => {
     src: string;
     name: string;
   } | null>(null);
+  const [playerSearch, setPlayerSearch] = useState("");
+  const [playerSort, setPlayerSort] = useState<PlayerSortMode>("attendance");
   const { players, playersError } = usePlayers();
 
-  const visiblePlayers = useMemo(
+  const attendingPlayers = useMemo(
     () =>
-      [...players]
-        .filter((player) => {
-          const attendance = normalizeAttendanceStatus(player.willCome);
-          return attendance === "yes" || attendance === "maybe" || attendance === "prospect";
-        })
-        .sort(
-          (a, b) =>
-            getAttendancePriority(normalizeAttendanceStatus(a.willCome)) -
-            getAttendancePriority(normalizeAttendanceStatus(b.willCome))
-        ),
+      players.filter((player) => {
+        const attendance = normalizeAttendanceStatus(player.willCome);
+        return attendance === "yes" || attendance === "maybe" || attendance === "prospect";
+      }),
     [players]
   );
 
-  const confirmedPlayersCount = visiblePlayers.filter(
+  const visiblePlayers = useMemo(() => {
+    const normalizedSearch = playerSearch.trim().toLocaleLowerCase("ru-RU");
+
+    return attendingPlayers
+      .filter((player) =>
+        player.name.toLocaleLowerCase("ru-RU").includes(normalizedSearch)
+      )
+      .sort((a, b) => {
+        const nameComparison = PLAYER_NAME_COLLATOR.compare(a.name, b.name);
+
+        if (playerSort === "name-asc") return nameComparison;
+        if (playerSort === "name-desc") return -nameComparison;
+
+        return (
+          getAttendancePriority(normalizeAttendanceStatus(a.willCome)) -
+            getAttendancePriority(normalizeAttendanceStatus(b.willCome)) ||
+          nameComparison
+        );
+      });
+  }, [attendingPlayers, playerSearch, playerSort]);
+
+  const confirmedPlayersCount = attendingPlayers.filter(
     (player) => normalizeAttendanceStatus(player.willCome) === "yes"
   ).length;
 
-  const attendingPlayersCount = visiblePlayers.filter((player) => {
+  const attendingPlayersCount = attendingPlayers.filter((player) => {
     const attendance = normalizeAttendanceStatus(player.willCome);
     return attendance === "yes" || attendance === "maybe";
   }).length;
@@ -258,10 +281,38 @@ const Main = () => {
 
       <section className="players-section">
         <div className="players-header">
-          <h2>Игроки</h2>
-          <p className="players-count">
-            Всего: {attendingPlayersCount} ({confirmedPlayersCount} точно)
-          </p>
+          <div>
+            <h2>Игроки</h2>
+            <p className="players-count">
+              Всего: {attendingPlayersCount} ({confirmedPlayersCount} точно)
+            </p>
+          </div>
+
+          <div className="players-controls">
+            <label className="players-search-field">
+              <span className="visually-hidden">Поиск игрока</span>
+              <input
+                type="search"
+                placeholder="Поиск по имени"
+                value={playerSearch}
+                onChange={(event) => setPlayerSearch(event.target.value)}
+              />
+            </label>
+
+            <label className="players-sort-field">
+              <span className="visually-hidden">Сортировка игроков</span>
+              <select
+                value={playerSort}
+                onChange={(event) =>
+                  setPlayerSort(event.target.value as PlayerSortMode)
+                }
+              >
+                <option value="attendance">По статусу</option>
+                <option value="name-asc">По алфавиту: А–Я</option>
+                <option value="name-desc">По алфавиту: Я–А</option>
+              </select>
+            </label>
+          </div>
         </div>
 
         {playersError && <p className="players-empty">{playersError}</p>}
@@ -325,7 +376,9 @@ const Main = () => {
               ) : (
                 <tr>
                   <td colSpan={5} className="players-empty">
-                    Пока никто не отметил, что придет
+                    {playerSearch.trim()
+                      ? "Игроки по вашему запросу не найдены"
+                      : "Пока никто не отметил, что придет"}
                   </td>
                 </tr>
               )}

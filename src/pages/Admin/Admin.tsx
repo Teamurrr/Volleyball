@@ -42,6 +42,12 @@ const DEFAULT_START_TIME = "08:00";
 const DEFAULT_END_TIME = "22:00";
 const DEFAULT_PLAYER_elo = 0;
 const INFO_DOC_ID = "info";
+const PLAYER_NAME_COLLATOR = new Intl.Collator("ru", {
+  sensitivity: "base",
+  numeric: true
+});
+
+type PlayerSortMode = "attendance" | "name-asc" | "name-desc";
 const WEEKDAY_OPTIONS = [
   "Понедельник",
   "Вторник",
@@ -117,17 +123,41 @@ const Admin = () => {
   const [isResettingAllPlayers, setIsResettingAllPlayers] = useState(false);
   const [isSavingAttendanceReport, setIsSavingAttendanceReport] = useState(false);
   const [playerDrafts, setPlayerDrafts] = useState<Record<string, PlayerDraft>>({});
+  const [playerSearch, setPlayerSearch] = useState("");
+  const [playerSort, setPlayerSort] = useState<PlayerSortMode>("attendance");
   const pendingScrollRestoreRef = useRef<number | null>(null);
 
   const sortedPlayers = useMemo(
     () =>
-      [...players].sort((a, b) => {
-        const left = normalizeAttendanceStatus(playerDrafts[a.id]?.willCome ?? a.willCome);
-        const right = normalizeAttendanceStatus(playerDrafts[b.id]?.willCome ?? b.willCome);
+      players
+        .filter((player) => {
+          const normalizedSearch = playerSearch.trim().toLocaleLowerCase("ru-RU");
+          if (!normalizedSearch) return true;
 
-        return getAttendancePriority(left) - getAttendancePriority(right);
-      }),
-    [playerDrafts, players]
+          const draft = playerDrafts[player.id];
+          const searchableText = `${draft?.name ?? player.name} ${draft?.position ?? player.position ?? ""}`
+            .toLocaleLowerCase("ru-RU");
+
+          return searchableText.includes(normalizedSearch);
+        })
+        .sort((a, b) => {
+          const leftName = playerDrafts[a.id]?.name ?? a.name;
+          const rightName = playerDrafts[b.id]?.name ?? b.name;
+          const nameComparison = PLAYER_NAME_COLLATOR.compare(leftName, rightName);
+
+          if (playerSort === "name-asc") return nameComparison;
+          if (playerSort === "name-desc") return -nameComparison;
+
+          const left = normalizeAttendanceStatus(
+            playerDrafts[a.id]?.willCome ?? a.willCome
+          );
+          const right = normalizeAttendanceStatus(
+            playerDrafts[b.id]?.willCome ?? b.willCome
+          );
+
+          return getAttendancePriority(left) - getAttendancePriority(right) || nameComparison;
+        }),
+    [playerDrafts, playerSearch, playerSort, players]
   );
 
   const fetchPlaces = async () => {
@@ -778,6 +808,36 @@ const Admin = () => {
           </div>
         </div>
 
+        <div className="admin-player-filters">
+          <label className="admin-player-search">
+            <span className="admin-filter-label">Поиск</span>
+            <input
+              type="search"
+              placeholder="Имя или амплуа"
+              value={playerSearch}
+              onChange={(event) => setPlayerSearch(event.target.value)}
+            />
+          </label>
+
+          <label className="admin-player-sort">
+            <span className="admin-filter-label">Сортировка</span>
+            <select
+              value={playerSort}
+              onChange={(event) =>
+                setPlayerSort(event.target.value as PlayerSortMode)
+              }
+            >
+              <option value="attendance">По статусу</option>
+              <option value="name-asc">По алфавиту: А–Я</option>
+              <option value="name-desc">По алфавиту: Я–А</option>
+            </select>
+          </label>
+
+          <p className="admin-filter-result">
+            Показано: {sortedPlayers.length} из {players.length}
+          </p>
+        </div>
+
         <div className="admin-table-wrap">
           <table className="admin-table">
             <thead>
@@ -946,7 +1006,9 @@ const Admin = () => {
               ) : (
                 <tr>
                   <td colSpan={7} className="admin-empty">
-                    Игроков пока нет
+                    {playerSearch.trim()
+                      ? "Игроки по вашему запросу не найдены"
+                      : "Игроков пока нет"}
                   </td>
                 </tr>
               )}
