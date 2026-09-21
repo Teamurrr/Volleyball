@@ -337,7 +337,7 @@ const Admin = () => {
       await addPlayer({
         name: playerName.trim(),
         position: playerPosition.trim(),
-        willCome: "no",
+        willCome: "yes",
         paid: false,
         photo: playerPhoto.trim() || "https://via.placeholder.com/80?text=Player",
         elo: Number(playerelo) || DEFAULT_PLAYER_elo
@@ -721,8 +721,8 @@ const Admin = () => {
           </button>
 
           <p className="admin-note">
-            Новый игрок добавляется в базу и по умолчанию не показывается на
-            главной, пока для него не выбран статус "Да", "Возможно" или "В перспективе".
+            Новый игрок добавляется со статусом "Да" и сразу показывается на
+            главной странице.
           </p>
         </section>
 

@@ -40,7 +40,7 @@ export const AddPlayerForm = () => {
     await addPlayer({
       name,
       position,
-      willCome: "no",
+      willCome: "yes",
       paid: false,
       photo: photoUrl,
       elo: 1
