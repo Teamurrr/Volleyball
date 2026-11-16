@@ -42,6 +42,8 @@ const DEFAULT_START_TIME = "08:00";
 const DEFAULT_END_TIME = "22:00";
 const DEFAULT_PLAYER_elo = 0;
 const INFO_DOC_ID = "info";
+const SIDEBAR_STORAGE_KEY = "admin-sidebar";
+const SIDEBAR_OVERLAY_QUERY = "(max-width: 1439px)";
 const PLAYER_NAME_COLLATOR = new Intl.Collator("ru", {
   sensitivity: "base",
   numeric: true
@@ -126,6 +128,39 @@ const Admin = () => {
   const [playerSearch, setPlayerSearch] = useState("");
   const [playerSort, setPlayerSort] = useState<PlayerSortMode>("attendance");
   const pendingScrollRestoreRef = useRef<number | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+    // on narrow screens the panel overlays the table, so it starts hidden
+    if (window.matchMedia(SIDEBAR_OVERLAY_QUERY).matches) return false;
+
+    try {
+      return window.localStorage.getItem(SIDEBAR_STORAGE_KEY) !== "closed";
+    } catch {
+      return true;
+    }
+  });
+
+  useEffect(() => {
+    if (window.matchMedia(SIDEBAR_OVERLAY_QUERY).matches) return;
+
+    try {
+      window.localStorage.setItem(SIDEBAR_STORAGE_KEY, isSidebarOpen ? "open" : "closed");
+    } catch {
+      // storage can be unavailable (private mode) — the panel still works
+    }
+  }, [isSidebarOpen]);
+
+  useEffect(() => {
+    if (!isSidebarOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && window.matchMedia(SIDEBAR_OVERLAY_QUERY).matches) {
+        setIsSidebarOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isSidebarOpen]);
 
   const sortedPlayers = useMemo(
     () =>
@@ -524,498 +559,558 @@ const Admin = () => {
           <Link className="admin-link-button" to="/reports">
             Открыть отчеты
           </Link>
-        </div>
-      </div>
-
-      <div className="admin-grid">
-        <section className="admin-card">
-          <h2>Новый зал</h2>
-
-          <input
-            placeholder="Название"
-            value={newPlaceName}
-            onChange={(e) => setNewPlaceName(e.target.value)}
-          />
-
-          <input
-            placeholder="Адрес"
-            value={newPlaceAddress}
-            onChange={(e) => setNewPlaceAddress(e.target.value)}
-          />
-
-          <input
-            placeholder="Ссылка на карту"
-            value={newPlaceAddressLink}
-            onChange={(e) => setNewPlaceAddressLink(e.target.value)}
-          />
-
-          <input
-            placeholder="Ссылка на фото"
-            value={newPlaceImage}
-            onChange={(e) => setNewPlaceImage(e.target.value)}
-          />
-
-          <select
-            value={newPlaceWeekday}
-            onChange={(e) => setNewPlaceWeekday(e.target.value as Weekday)}
+          <button
+            type="button"
+            className="sidebar-toggle-button"
+            aria-expanded={isSidebarOpen}
+            aria-controls="admin-sidebar"
+            onClick={() => setIsSidebarOpen((open) => !open)}
           >
-            {WEEKDAY_OPTIONS.map((day) => (
-              <option key={day} value={day}>
-                {day}
-              </option>
-            ))}
-          </select>
-
-          <div className="time-fields">
-            <label className="time-field">
-              <span>С</span>
-              <input
-                type="time"
-                value={newPlaceStartTime}
-                onChange={(e) => setNewPlaceStartTime(e.target.value)}
-              />
-            </label>
-
-            <label className="time-field">
-              <span>До</span>
-              <input
-                type="time"
-                value={newPlaceEndTime}
-                onChange={(e) => setNewPlaceEndTime(e.target.value)}
-              />
-            </label>
-          </div>
-
-          <label className="admin-check">
-            <input
-              type="checkbox"
-              checked={newPlaceIsMain}
-              onChange={(e) => setNewPlaceIsMain(e.target.checked)}
-            />
-            <span>Сделать главным сразу</span>
-          </label>
-
-          <button onClick={() => void createPlace()} disabled={isSavingPlace}>
-            {isSavingPlace ? "Сохранение..." : "Добавить зал"}
+            {isSidebarOpen ? "Скрыть настройки" : "Залы и настройки"}
           </button>
-
-          {placeError && <p className="admin-note">{placeError}</p>}
-
-          {newPlaceImage && (
-            <img src={newPlaceImage} alt="preview new place" className="preview" />
-          )}
-        </section>
-
-        <section className="admin-card">
-          <h2>Место проведения</h2>
-
-          <select value={selectedId} onChange={(e) => handleSelect(e.target.value)}>
-            <option value="">Выбери зал</option>
-            {places.map((place) => (
-              <option key={place.id} value={place.id}>
-                {place.name}
-              </option>
-            ))}
-          </select>
-
-          <input
-            placeholder="Название"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-
-          <input
-            placeholder="Адрес"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-          />
-
-          <input
-            placeholder="Ссылка на карту"
-            value={addressLink}
-            onChange={(e) => setAddressLink(e.target.value)}
-          />
-
-          <input
-            placeholder="Ссылка на фото"
-            value={image}
-            onChange={(e) => setImage(e.target.value)}
-          />
-
-          <select value={weekday} onChange={(e) => setWeekday(e.target.value as Weekday)}>
-            {WEEKDAY_OPTIONS.map((day) => (
-              <option key={day} value={day}>
-                {day}
-              </option>
-            ))}
-          </select>
-
-          <div className="time-fields">
-            <label className="time-field">
-              <span>С</span>
-              <input
-                type="time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-              />
-            </label>
-
-            <label className="time-field">
-              <span>До</span>
-              <input
-                type="time"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-              />
-            </label>
-          </div>
-
-          <label className="admin-check">
-            <input
-              type="checkbox"
-              checked={isMain}
-              onChange={(e) => setIsMain(e.target.checked)}
-            />
-            <span>Сделать главным</span>
-          </label>
-
-          <button className="save-action-button" onClick={updatePlace}>
-            Сохранить место
-          </button>
-
-          {image && <img src={image} alt="preview" className="preview" />}
-        </section>
-
-        <section className="admin-card">
-          <h2>Добавить игрока</h2>
-
-          <input
-            placeholder="Имя игрока"
-            value={playerName}
-            onChange={(e) => setPlayerName(e.target.value)}
-          />
-
-          <input
-            placeholder="Амплуа"
-            value={playerPosition}
-            onChange={(e) => setPlayerPosition(e.target.value)}
-          />
-
-          <input
-            placeholder="Ссылка на фото"
-            value={playerPhoto}
-            onChange={(e) => setPlayerPhoto(e.target.value)}
-          />
-
-          <input
-            type="number"
-            min="0"
-            step="1"
-            placeholder="Рейтинг"
-            value={playerelo}
-            onChange={(e) => setPlayerelo(e.target.value)}
-          />
-
-          <button onClick={createPlayer} disabled={isSavingPlayer}>
-            {isSavingPlayer ? "Сохранение..." : "Добавить игрока"}
-          </button>
-
-          <p className="admin-note">
-            Новый игрок добавляется со статусом "Да" и сразу показывается на
-            главной странице.
-          </p>
-        </section>
-
-        <section className="admin-card">
-          <h2>Пропуск и QR</h2>
-
-          <input
-            placeholder="Ссылка на пропуск"
-            value={passLink}
-            onChange={(e) => setPassLink(e.target.value)}
-          />
-
-          <input
-            placeholder="Ссылка на QR-код оплаты"
-            value={qrCodeLink}
-            onChange={(e) => setQrCodeLink(e.target.value)}
-          />
-
-          <input
-            type="number"
-            min="0"
-            step="1"
-            placeholder="Общая сумма оплаты"
-            value={totalPaid}
-            onChange={(e) => setTotalPaid(e.target.value)}
-          />
-
-          <button className="save-action-button" onClick={() => void saveInfo()}>
-            Сохранить ссылки
-          </button>
-
-          <p className="admin-note">
-            Данные сохраняются в коллекции "info" в поля "pass", "qrcode" и
-            "totalPaid".
-          </p>
-
-          <div className="info-preview-grid">
-            {passLink && (
-              <img
-                className="preview"
-                src={passLink}
-                alt="Предпросмотр пропуска"
-              />
-            )}
-
-            {qrCodeLink && (
-              <img
-                className="preview"
-                src={qrCodeLink}
-                alt="Предпросмотр QR-кода"
-              />
-            )}
-          </div>
-        </section>
+        </div>
       </div>
 
-      <section className="admin-card admin-card-table">
-        <div className="admin-table-header">
-          <div>
-            <h2>Все игроки</h2>
-            <p>
-              На главной показываются только игроки со статусом "Да", "Возможно" и
-              "В перспективе"
-            </p>
-          </div>
+      <div className={`admin-layout${isSidebarOpen ? " is-sidebar-open" : ""}`}>
+        <main className="admin-main">
+          <section className="admin-card admin-card-table">
+            <div className="admin-table-header">
+              <div>
+                <h2>Все игроки</h2>
+                <p>
+                  На главной показываются только игроки со статусом "Да", "Возможно" и
+                  "В перспективе"
+                </p>
+              </div>
 
-          <div className="admin-table-actions">
-            <button
-              className="reset-all-button"
-              onClick={() => void resetAllPlayerStatuses()}
-              disabled={isResettingAllPlayers || isSavingAllPlayers || players.length === 0}
-            >
-              {isResettingAllPlayers ? "Сбрасываем..." : "Всем: не оплачено и не придет"}
-            </button>
+              <div className="admin-table-actions">
+                <button
+                  className="reset-all-button"
+                  onClick={() => void resetAllPlayerStatuses()}
+                  disabled={isResettingAllPlayers || isSavingAllPlayers || players.length === 0}
+                >
+                  {isResettingAllPlayers ? "Сбрасываем..." : "Всем: не оплачено и не придет"}
+                </button>
 
-            <button
-              className="save-all-button save-action-button"
-              onClick={() => void saveAllPlayers()}
-              disabled={isSavingAllPlayers || isResettingAllPlayers || players.length === 0}
-            >
-              {isSavingAllPlayers ? "Сохраняем..." : "Сохранить всех"}
-            </button>
-          </div>
-        </div>
+                <button
+                  className="save-all-button save-action-button"
+                  onClick={() => void saveAllPlayers()}
+                  disabled={isSavingAllPlayers || isResettingAllPlayers || players.length === 0}
+                >
+                  {isSavingAllPlayers ? "Сохраняем..." : "Сохранить всех"}
+                </button>
+              </div>
+            </div>
 
-        <div className="admin-player-filters">
-          <label className="admin-player-search">
-            <span className="admin-filter-label">Поиск</span>
-            <input
-              type="search"
-              placeholder="Имя или амплуа"
-              value={playerSearch}
-              onChange={(event) => setPlayerSearch(event.target.value)}
-            />
-          </label>
+            <div className="admin-player-filters">
+              <label className="admin-player-search">
+                <span className="admin-filter-label">Поиск</span>
+                <input
+                  type="search"
+                  placeholder="Имя или амплуа"
+                  value={playerSearch}
+                  onChange={(event) => setPlayerSearch(event.target.value)}
+                />
+              </label>
 
-          <label className="admin-player-sort">
-            <span className="admin-filter-label">Сортировка</span>
-            <select
-              value={playerSort}
-              onChange={(event) =>
-                setPlayerSort(event.target.value as PlayerSortMode)
-              }
-            >
-              <option value="attendance">По статусу</option>
-              <option value="name-asc">По алфавиту: А–Я</option>
-              <option value="name-desc">По алфавиту: Я–А</option>
-            </select>
-          </label>
+              <label className="admin-player-sort">
+                <span className="admin-filter-label">Сортировка</span>
+                <select
+                  value={playerSort}
+                  onChange={(event) =>
+                    setPlayerSort(event.target.value as PlayerSortMode)
+                  }
+                >
+                  <option value="attendance">По статусу</option>
+                  <option value="name-asc">По алфавиту: А–Я</option>
+                  <option value="name-desc">По алфавиту: Я–А</option>
+                </select>
+              </label>
 
-          <p className="admin-filter-result">
-            Показано: {sortedPlayers.length} из {players.length}
-          </p>
-        </div>
+              <p className="admin-filter-result">
+                Показано: {sortedPlayers.length} из {players.length}
+              </p>
+            </div>
 
-        <div className="admin-table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Игрок</th>
-                <th>Амплуа</th>
-                <th>Придет</th>
-                <th>Оплатил</th>
-                <th>Рейтинг</th>
-                <th>Фото</th>
-                <th>Действие</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {sortedPlayers.length > 0 ? (
-                sortedPlayers.map((player) => (
-                  <tr key={player.id}>
-                    <td>
-                      <input
-                        className="table-input"
-                        value={playerDrafts[player.id]?.name ?? player.name}
-                        onChange={(e) =>
-                          updatePlayerDraft(player.id, "name", e.target.value)
-                        }
-                      />
-                    </td>
-                    <td>
-                      <input
-                        className="table-input"
-                        placeholder="Амплуа"
-                        value={playerDrafts[player.id]?.position ?? player.position}
-                        onChange={(e) =>
-                          updatePlayerDraft(player.id, "position", e.target.value)
-                        }
-                      />
-                    </td>
-                    <td>
-                      <div className="attendance-actions">
-                        <button
-                          className={
-                            (playerDrafts[player.id]?.willCome ?? player.willCome) === "yes"
-                              ? "is-active"
-                              : ""
-                          }
-                          onClick={() => {
-                            preserveScrollPosition();
-                            void setPlayerAttendance(player, "yes");
-                            updatePlayerDraft(player.id, "willCome", "yes");
-                          }}
-                        >
-                          Да
-                        </button>
-                        <button
-                          className={
-                            (playerDrafts[player.id]?.willCome ?? player.willCome) === "maybe"
-                              ? "is-active"
-                              : ""
-                          }
-                          onClick={() => {
-                            preserveScrollPosition();
-                            void setPlayerAttendance(player, "maybe");
-                            updatePlayerDraft(player.id, "willCome", "maybe");
-                          }}
-                        >
-                          Возможно
-                        </button>
-                        <button
-                          className={
-                            (playerDrafts[player.id]?.willCome ?? player.willCome) === "prospect"
-                              ? "is-active"
-                              : ""
-                          }
-                          onClick={() => {
-                            preserveScrollPosition();
-                            void setPlayerAttendance(player, "prospect");
-                            updatePlayerDraft(player.id, "willCome", "prospect");
-                          }}
-                        >
-                          В перспективе
-                        </button>
-                        <button
-                          className={
-                            (playerDrafts[player.id]?.willCome ?? player.willCome) === "no"
-                              ? "is-active"
-                              : ""
-                          }
-                          onClick={() => {
-                            preserveScrollPosition();
-                            void setPlayerAttendance(player, "no");
-                            updatePlayerDraft(player.id, "willCome", "no");
-                          }}
-                        >
-                          Нет
-                        </button>
-                      </div>
-                    </td>
-                    <td>
-                      <label className="table-check">
-                        <input
-                          type="checkbox"
-                          checked={playerDrafts[player.id]?.paid ?? player.paid}
-                          onChange={(e) =>
-                            updatePlayerDraft(player.id, "paid", e.target.checked)
-                          }
-                        />
-                        <span>
-                          {(playerDrafts[player.id]?.paid ?? player.paid) ? "Да" : "Нет"}
-                        </span>
-                      </label>
-                    </td>
-                    <td>
-                      <input
-                        className="table-input elo-input"
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={
-                          playerDrafts[player.id]?.elo ??
-                          player.elo ??
-                          DEFAULT_PLAYER_elo
-                        }
-                        onChange={(e) =>
-                          updatePlayerDraft(
-                            player.id,
-                            "elo",
-                            e.target.value === "" ? "" : Number(e.target.value)
-                          )
-                        }
-                      />
-                    </td>
-                    <td>
-                      <div className="photo-editor">
-                        <input
-                          className="table-input"
-                          value={playerDrafts[player.id]?.photo ?? player.photo}
-                          onChange={(e) =>
-                            updatePlayerDraft(player.id, "photo", e.target.value)
-                          }
-                        />
-                        <img
-                          className="table-photo"
-                          src={playerDrafts[player.id]?.photo ?? player.photo}
-                          alt={playerDrafts[player.id]?.name ?? player.name}
-                        />
-                      </div>
-                    </td>
-                    <td>
-                      <div className="player-actions">
-                        <button
-                          className="save-player-button save-action-button"
-                          onClick={() => void savePlayer(player.id)}
-                        >
-                          Сохранить
-                        </button>
-                        <button
-                          className="delete-player-button"
-                          onClick={() => void removePlayer(player.id)}
-                        >
-                          Удалить
-                        </button>
-                      </div>
-                    </td>
+            <div className="admin-table-wrap">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Игрок</th>
+                    <th>Амплуа</th>
+                    <th>Придет</th>
+                    <th>Оплатил</th>
+                    <th>Рейтинг</th>
+                    <th>Фото</th>
+                    <th>Действие</th>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={7} className="admin-empty">
-                    {playerSearch.trim()
-                      ? "Игроки по вашему запросу не найдены"
-                      : "Игроков пока нет"}
-                  </td>
-                </tr>
+                </thead>
+
+                <tbody>
+                  {sortedPlayers.length > 0 ? (
+                    sortedPlayers.map((player) => (
+                      <tr key={player.id}>
+                        <td>
+                          <div className="player-name-cell">
+                            <img
+                              className="table-photo"
+                              src={playerDrafts[player.id]?.photo ?? player.photo}
+                              alt=""
+                            />
+                            <input
+                              className="table-input"
+                              aria-label="Имя игрока"
+                              value={playerDrafts[player.id]?.name ?? player.name}
+                              onChange={(e) =>
+                                updatePlayerDraft(player.id, "name", e.target.value)
+                              }
+                            />
+                          </div>
+                        </td>
+                        <td>
+                          <input
+                            className="table-input"
+                            placeholder="Амплуа"
+                            value={playerDrafts[player.id]?.position ?? player.position}
+                            onChange={(e) =>
+                              updatePlayerDraft(player.id, "position", e.target.value)
+                            }
+                          />
+                        </td>
+                        <td>
+                          <div className="attendance-actions">
+                            <button
+                              className={
+                                (playerDrafts[player.id]?.willCome ?? player.willCome) === "yes"
+                                  ? "is-active"
+                                  : ""
+                              }
+                              onClick={() => {
+                                preserveScrollPosition();
+                                void setPlayerAttendance(player, "yes");
+                                updatePlayerDraft(player.id, "willCome", "yes");
+                              }}
+                            >
+                              Да
+                            </button>
+                            <button
+                              className={
+                                (playerDrafts[player.id]?.willCome ?? player.willCome) === "maybe"
+                                  ? "is-active"
+                                  : ""
+                              }
+                              onClick={() => {
+                                preserveScrollPosition();
+                                void setPlayerAttendance(player, "maybe");
+                                updatePlayerDraft(player.id, "willCome", "maybe");
+                              }}
+                            >
+                              Возможно
+                            </button>
+                            <button
+                              className={
+                                (playerDrafts[player.id]?.willCome ?? player.willCome) === "prospect"
+                                  ? "is-active"
+                                  : ""
+                              }
+                              onClick={() => {
+                                preserveScrollPosition();
+                                void setPlayerAttendance(player, "prospect");
+                                updatePlayerDraft(player.id, "willCome", "prospect");
+                              }}
+                            >
+                              В перспективе
+                            </button>
+                            <button
+                              className={
+                                (playerDrafts[player.id]?.willCome ?? player.willCome) === "no"
+                                  ? "is-active"
+                                  : ""
+                              }
+                              onClick={() => {
+                                preserveScrollPosition();
+                                void setPlayerAttendance(player, "no");
+                                updatePlayerDraft(player.id, "willCome", "no");
+                              }}
+                            >
+                              Нет
+                            </button>
+                          </div>
+                        </td>
+                        <td>
+                          <label className="table-check">
+                            <input
+                              type="checkbox"
+                              checked={playerDrafts[player.id]?.paid ?? player.paid}
+                              onChange={(e) =>
+                                updatePlayerDraft(player.id, "paid", e.target.checked)
+                              }
+                            />
+                            <span>
+                              {(playerDrafts[player.id]?.paid ?? player.paid) ? "Да" : "Нет"}
+                            </span>
+                          </label>
+                        </td>
+                        <td>
+                          <input
+                            className="table-input elo-input"
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={
+                              playerDrafts[player.id]?.elo ??
+                              player.elo ??
+                              DEFAULT_PLAYER_elo
+                            }
+                            onChange={(e) =>
+                              updatePlayerDraft(
+                                player.id,
+                                "elo",
+                                e.target.value === "" ? "" : Number(e.target.value)
+                              )
+                            }
+                          />
+                        </td>
+                        <td>
+                          <input
+                            className="table-input photo-input"
+                            aria-label="Ссылка на фото"
+                            value={playerDrafts[player.id]?.photo ?? player.photo}
+                            onChange={(e) =>
+                              updatePlayerDraft(player.id, "photo", e.target.value)
+                            }
+                          />
+                        </td>
+                        <td>
+                          <div className="player-actions">
+                            <button
+                              className="save-player-button save-action-button"
+                              onClick={() => void savePlayer(player.id)}
+                            >
+                              Сохранить
+                            </button>
+                            <button
+                              className="delete-player-button"
+                              onClick={() => void removePlayer(player.id)}
+                            >
+                              Удалить
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={7} className="admin-empty">
+                        {playerSearch.trim()
+                          ? "Игроки по вашему запросу не найдены"
+                          : "Игроков пока нет"}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </main>
+
+        <div
+          className="admin-sidebar-backdrop"
+          aria-hidden="true"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+
+        <aside
+          id="admin-sidebar"
+          className="admin-sidebar"
+          aria-label="Залы и настройки"
+          hidden={!isSidebarOpen}
+        >
+          <div className="admin-sidebar-header">
+            <h2>Залы и настройки</h2>
+            <button
+              type="button"
+              className="sidebar-close-button"
+              aria-label="Скрыть панель"
+              onClick={() => setIsSidebarOpen(false)}
+            >
+              ×
+            </button>
+          </div>
+
+          <div className="admin-sidebar-body">
+            <details className="admin-card sidebar-section" open>
+              <summary>
+                <h2>Добавить игрока</h2>
+              </summary>
+
+              <div className="sidebar-section-body">
+
+              <input
+                placeholder="Имя игрока"
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+              />
+
+              <input
+                placeholder="Амплуа"
+                value={playerPosition}
+                onChange={(e) => setPlayerPosition(e.target.value)}
+              />
+
+              <input
+                placeholder="Ссылка на фото"
+                value={playerPhoto}
+                onChange={(e) => setPlayerPhoto(e.target.value)}
+              />
+
+              <input
+                type="number"
+                min="0"
+                step="1"
+                placeholder="Рейтинг"
+                value={playerelo}
+                onChange={(e) => setPlayerelo(e.target.value)}
+              />
+
+              <button onClick={createPlayer} disabled={isSavingPlayer}>
+                {isSavingPlayer ? "Сохранение..." : "Добавить игрока"}
+              </button>
+
+              <p className="admin-note">
+                Новый игрок добавляется со статусом "Да" и сразу показывается на
+                главной странице.
+              </p>
+              </div>
+            </details>
+
+            <details className="admin-card sidebar-section" open>
+              <summary>
+                <h2>Место проведения</h2>
+              </summary>
+
+              <div className="sidebar-section-body">
+
+              <select value={selectedId} onChange={(e) => handleSelect(e.target.value)}>
+                <option value="">Выбери зал</option>
+                {places.map((place) => (
+                  <option key={place.id} value={place.id}>
+                    {place.name}
+                  </option>
+                ))}
+              </select>
+
+              <input
+                placeholder="Название"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+
+              <input
+                placeholder="Адрес"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+              />
+
+              <input
+                placeholder="Ссылка на карту"
+                value={addressLink}
+                onChange={(e) => setAddressLink(e.target.value)}
+              />
+
+              <input
+                placeholder="Ссылка на фото"
+                value={image}
+                onChange={(e) => setImage(e.target.value)}
+              />
+
+              <select value={weekday} onChange={(e) => setWeekday(e.target.value as Weekday)}>
+                {WEEKDAY_OPTIONS.map((day) => (
+                  <option key={day} value={day}>
+                    {day}
+                  </option>
+                ))}
+              </select>
+
+              <div className="time-fields">
+                <label className="time-field">
+                  <span>С</span>
+                  <input
+                    type="time"
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                  />
+                </label>
+
+                <label className="time-field">
+                  <span>До</span>
+                  <input
+                    type="time"
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                  />
+                </label>
+              </div>
+
+              <label className="admin-check">
+                <input
+                  type="checkbox"
+                  checked={isMain}
+                  onChange={(e) => setIsMain(e.target.checked)}
+                />
+                <span>Сделать главным</span>
+              </label>
+
+              <button className="save-action-button" onClick={updatePlace}>
+                Сохранить место
+              </button>
+
+              {image && <img src={image} alt="preview" className="preview" />}
+              </div>
+            </details>
+
+            <details className="admin-card sidebar-section">
+              <summary>
+                <h2>Пропуск и QR</h2>
+              </summary>
+
+              <div className="sidebar-section-body">
+
+              <input
+                placeholder="Ссылка на пропуск"
+                value={passLink}
+                onChange={(e) => setPassLink(e.target.value)}
+              />
+
+              <input
+                placeholder="Ссылка на QR-код оплаты"
+                value={qrCodeLink}
+                onChange={(e) => setQrCodeLink(e.target.value)}
+              />
+
+              <input
+                type="number"
+                min="0"
+                step="1"
+                placeholder="Общая сумма оплаты"
+                value={totalPaid}
+                onChange={(e) => setTotalPaid(e.target.value)}
+              />
+
+              <button className="save-action-button" onClick={() => void saveInfo()}>
+                Сохранить ссылки
+              </button>
+
+              <p className="admin-note">
+                Данные сохраняются в коллекции "info" в поля "pass", "qrcode" и
+                "totalPaid".
+              </p>
+
+              <div className="info-preview-grid">
+                {passLink && (
+                  <img
+                    className="preview"
+                    src={passLink}
+                    alt="Предпросмотр пропуска"
+                  />
+                )}
+
+                {qrCodeLink && (
+                  <img
+                    className="preview"
+                    src={qrCodeLink}
+                    alt="Предпросмотр QR-кода"
+                  />
+                )}
+              </div>
+              </div>
+            </details>
+
+            <details className="admin-card sidebar-section">
+              <summary>
+                <h2>Новый зал</h2>
+              </summary>
+
+              <div className="sidebar-section-body">
+
+              <input
+                placeholder="Название"
+                value={newPlaceName}
+                onChange={(e) => setNewPlaceName(e.target.value)}
+              />
+
+              <input
+                placeholder="Адрес"
+                value={newPlaceAddress}
+                onChange={(e) => setNewPlaceAddress(e.target.value)}
+              />
+
+              <input
+                placeholder="Ссылка на карту"
+                value={newPlaceAddressLink}
+                onChange={(e) => setNewPlaceAddressLink(e.target.value)}
+              />
+
+              <input
+                placeholder="Ссылка на фото"
+                value={newPlaceImage}
+                onChange={(e) => setNewPlaceImage(e.target.value)}
+              />
+
+              <select
+                value={newPlaceWeekday}
+                onChange={(e) => setNewPlaceWeekday(e.target.value as Weekday)}
+              >
+                {WEEKDAY_OPTIONS.map((day) => (
+                  <option key={day} value={day}>
+                    {day}
+                  </option>
+                ))}
+              </select>
+
+              <div className="time-fields">
+                <label className="time-field">
+                  <span>С</span>
+                  <input
+                    type="time"
+                    value={newPlaceStartTime}
+                    onChange={(e) => setNewPlaceStartTime(e.target.value)}
+                  />
+                </label>
+
+                <label className="time-field">
+                  <span>До</span>
+                  <input
+                    type="time"
+                    value={newPlaceEndTime}
+                    onChange={(e) => setNewPlaceEndTime(e.target.value)}
+                  />
+                </label>
+              </div>
+
+              <label className="admin-check">
+                <input
+                  type="checkbox"
+                  checked={newPlaceIsMain}
+                  onChange={(e) => setNewPlaceIsMain(e.target.checked)}
+                />
+                <span>Сделать главным сразу</span>
+              </label>
+
+              <button onClick={() => void createPlace()} disabled={isSavingPlace}>
+                {isSavingPlace ? "Сохранение..." : "Добавить зал"}
+              </button>
+
+              {placeError && <p className="admin-note">{placeError}</p>}
+
+              {newPlaceImage && (
+                <img src={newPlaceImage} alt="preview new place" className="preview" />
               )}
-            </tbody>
-          </table>
-        </div>
-      </section>
+              </div>
+            </details>
+          </div>
+        </aside>
+      </div>
     </div>
   );
 };
